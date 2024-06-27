@@ -2,6 +2,7 @@ import pygame as pg
 from pygame import Color as Color, Vector2 as Vec2
 import numpy as np
 from dataclasses import dataclass
+import colorsys
 
 pg.init()
 WIN_W = 1280
@@ -27,7 +28,6 @@ def roundNumToNearest(value, round_to):
     except ZeroDivisionError:
         return value
 
-
 def roundNumsToNearest(values, round_to):
     for value in values:
         value = round(value)
@@ -40,7 +40,8 @@ def roundNumsToNearest(values, round_to):
         except ZeroDivisionError:
             yield value
 
-
+def HSVToRGB(color):
+    return np.array((colorsys.hsv_to_rgb(color[0] / 360, color[1] / 100, color[2] / 100))) * 255
 @dataclass
 class POLYGONS:
     def __init__(self, size, action_type=None):
@@ -243,7 +244,7 @@ class DeleteBox(pg.sprite.Sprite):
     def draw(self, display):
         display.blit(self.image, self.rect, special_flags=pg.BLEND_ADD)
 
-
+@dataclass
 class ACTION_TYPES:
     RECTANGLE = 'RECTANGLE'
     CIRCLE = 'CIRCLE'
@@ -255,7 +256,7 @@ class ACTION_TYPES:
     SHAPES = [RECTANGLE, CIRCLE, TRIANGLE, PENTAGON, STAR, HEXAGON]
     ACTION_TYPES = [*SHAPES, DELETE]
 GLOBALS.ACTION_TYPE = ACTION_TYPES.RECTANGLE
-
+@dataclass
 class MOUSE_STATES:
     IDLE = 'NOT_DRAGGING'
     DRAGGING = 'DRAGGING'
@@ -264,12 +265,24 @@ GLOBALS.MOUSE_ACTION = MOUSE_STATES.IDLE
 
 class TSD:
     CURRENT_SHAPE = None
+    COLOR = None
     START = (0, 0)
     END = (0, 0)
     WIDTH = 0
     HEIGHT = 0
     SIZE = (0, 0)
-def startShape(color=COLOR.WHITE, step_size=0, shift_ratio=1 / 1):
+def startShape():
+    if any(GLOBALS.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
+        GLOBALS.MOUSE_ACTION = MOUSE_STATES.DRAGGING
+        TSD.START = np.array(tuple(roundNumsToNearest(mouse.pos, GLOBALS.GRID_SIZE)))
+        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, GLOBALS.ACTION_TYPE)
+        shapes_group.add(TSD.CURRENT_SHAPE)
+    if GLOBALS.ACTION_TYPE == ACTION_TYPES.DELETE:
+        GLOBALS.MOUSE_ACTION = MOUSE_STATES.DRAGGING
+        TSD.START = np.array(tuple(mouse.pos))
+        TSD.CURRENT_SHAPE = DeleteBox(TSD.START, TSD.SIZE)
+        shapes_group.add(TSD.CURRENT_SHAPE)
+def drawShape(color=COLOR.WHITE, step_size=0, shift_ratio=1 / 1):
     TSD.CURRENT_SHAPE.rect.topleft = TSD.START
     TSD.END = np.array(tuple(roundNumsToNearest(mouse.pos, step_size)))
     TSD.WIDTH = (TSD.END[0] - TSD.START[0])
@@ -304,7 +317,7 @@ def startShape(color=COLOR.WHITE, step_size=0, shift_ratio=1 / 1):
 def endShape():
     if GLOBALS.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
         if any(GLOBALS.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
-            startShape(Color(128, 128, 128), GLOBALS.GRID_SIZE,
+            drawShape(Color(128, 128, 128), GLOBALS.GRID_SIZE,
                          TSD.SHIFT_RATIO)
         if GLOBALS.ACTION_TYPE == ACTION_TYPES.DELETE:
             for shape in shapes_group:
@@ -338,18 +351,17 @@ def changeActionTypeWithEvent(hotbar, event):
             GLOBALS.ACTION_TYPE = ACTION_TYPES.DELETE
     hotbar.switch_to_active_button()
 def scroll_through_action_types(event):
+    inc = 0
     if e.precise_y > 0:
-        inc = -1
-    if e.precise_y < 0:
         inc = 1
+    if e.precise_y < 0:
+        inc = -1
+    index = ACTION_TYPES.ACTION_TYPES.index(GLOBALS.ACTION_TYPE) - inc
     try:
-        GLOBALS.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[ACTION_TYPES.ACTION_TYPES.index(GLOBALS.ACTION_TYPE) - inc]
+        GLOBALS.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[index]
     except IndexError:
         GLOBALS.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[0]
     HotBar.switch_to_active_button()
-
-shapes_group = pg.sprite.Group()
-
 
 class ShapeButton():
     def __init__(self, rect, action_type, bg_color, border_color, shape_color, shape_scale):
@@ -450,8 +462,19 @@ class HotBar:
         return self
 HotBar = HotBar(7, (50, 50), 5, Color(100,100,100), Color(50,50,50))
 
-class ColorSlider():
+class Slider():
+    class PD:
+        idle = {'bg':Color('WHITE'), 'bd':Color('WHITE')}
+        active = {'bg':Color('BLACK'), 'bd':Color('WHITE')}
+        current = {'bg':idle['bg'], 'bd':idle['bd']}
+        bd_width = 3
     def __init__(self, mininum, maximum, rect, text, background: pg.Surface, border_color):
+        self.mouse_dragging = False
+        self.min = mininum
+        self.max = maximum
+        self.value = self.min
+        self.fraction = 0
+
         # Create bar
         self.bar_rect = pg.Rect(rect)
         self.bar = pg.Surface(self.bar_rect.size)
@@ -463,53 +486,58 @@ class ColorSlider():
         # text_height = self.bar_rect.h
 
         norm = np.linalg.norm((self.bar_rect.w, self.bar_rect.h))
-        ratio = self.bar_rect.w / self.bar_rect.h
-        self.pick_color_idle = Color('WHITE')
-        self.pick_color_active = Color('BLACK')
-        self.current_pick_color = self.pick_color_idle
         self.pick = pg.Surface(np.array((norm, norm * 3/4)) / 10)
         self.pick.set_colorkey(Color(1, 1, 1)); self.pick.fill(self.pick.get_colorkey())
-        pg.draw.polygon(self.pick, Color('WHITE'), POLYGONS(self.pick.get_size()).triangle)
-        self.pick_rect = self.pick.get_rect(midbottom=(self.bar_rect.w / 2, self.bar_rect.h + self.pick.get_height()/3))
+        pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle)
+        pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle, width=self.PD.bd_width)
+        self.pick_rect = self.pick.get_rect(center=(self.pick.get_width() / 2, self.bar_rect.h))
 
         self.rect = pg.Rect((self.bar_rect.topleft),
                             (self.bar_rect.w + self.pick_rect.w, self.bar_rect.h + self.pick.get_height()/3))
         self.surf = pg.Surface(self.rect.size)
         self.surf.set_colorkey(Color(1,1,1)); self.surf.fill(self.surf.get_colorkey())
 
-        self.being_dragged = False
-        self.value = 0
         self.update()
     def hovered(self):
         return bool(self.mask.overlap(mouse.mask, (mouse.pos[0] - self.rect.x, mouse.pos[1] - self.rect.y)))
     def update(self):
-        if self.being_dragged:
-            if mouse.pos[0] <= self.rect.x:
-                self.value = 0
-                self.pick_rect.centerx = self.pick_rect.w / 2
-            elif mouse.pos[0] >= self.rect.x + self.bar_rect.w:
-                self.value = 1
-                self.pick_rect.centerx = self.rect.w - self.pick_rect.w / 2
+        if self.mouse_dragging:
+            half_pick_width = self.pick_rect.w / 2
+            if mouse.pos[0] <= self.rect.x + half_pick_width:
+                self.fraction = 0
+                self.pick_rect.centerx = half_pick_width
+            elif mouse.pos[0] >= self.rect.x + self.bar_rect.width + half_pick_width:
+                self.fraction = 1
+                self.pick_rect.centerx = self.rect.width - half_pick_width
             else:
-                self.value = ((mouse.pos[0]) - self.rect.x) / (self.bar_rect.w)
+                self.fraction = ((mouse.pos[0]) - self.rect.x - half_pick_width)/ (self.bar_rect.width)
                 self.pick_rect.centerx = mouse.pos[0] - self.rect.x
+
+            self.PD.current['bg'] = self.PD.active['bg']
+            self.PD.current['bd'] = self.PD.active['bd']
+
         self.pick.fill(self.pick.get_colorkey())
-        pg.draw.polygon(self.pick, self.current_pick_color, POLYGONS(self.pick.get_size()).triangle)
+        self.value = self.fraction * (self.max - self.min) + self.min
+        pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle)
+        pg.draw.polygon(self.pick, self.PD.current['bd'], POLYGONS(self.pick.get_size()).triangle, width=self.PD.bd_width)
 
         self.mask = pg.mask.from_surface(self.surf)
     def draw(self, display):
-        if self.hovered():
-            self.current_pick_color = self.pick_color_active
-            self.update()
+        if self.hovered() or self.mouse_dragging:
+            self.PD.current['bg'] = self.PD.active['bg']
+            self.PD.current['bd'] = self.PD.active['bd']
         else:
-            self.current_pick_color = self.pick_color_idle
+            self.PD.current['bg'] = self.PD.idle['bg']
+            self.PD.current['bd'] = self.PD.idle['bd']
+
+        self.update()
         self.surf.fill(self.surf.get_colorkey())
         self.surf.blit(self.bar, (self.pick_rect.w / 2, 0))
         self.surf.blit(self.pick, self.pick_rect.topleft)
         display.blit(self.surf, self.rect)
-slider1_bg = pg.image.load(r'Images/slider_backgrounds/rainbow_strip.png').convert_alpha()
-slider1 = ColorSlider(22, 150, (1070, 50, 200, 25), 'RGB', slider1_bg, Color(64,64,64))
-slider1.rect.x -= slider1.pick_rect.w
+rgb_slider_bg = pg.image.load(r'Images/slider_backgrounds/rainbow_strip.png').convert_alpha()
+rgb_slider = Slider(0, 360, (1070, 50, 200, 25), 'RGB', rgb_slider_bg, Color(64,64,64))
+rgb_slider.rect.x -= rgb_slider.pick_rect.w
 
 class Cursor:
     def __init__(self):
@@ -586,23 +614,28 @@ class PauseScreen:
             button.update()
             button.draw(display)
 
+shapes_group = pg.sprite.Group()
+
+ui_group = [HotBar, rgb_slider]
+
+
 Pause_Screen = PauseScreen()
 paused = False
 
 run = True
 while run:
     SCREEN.fill(COLOR.BLACK)
-    ##################################
+    ####################################################################################################################
     #         POLL FOR EVENTS        #
-    ##################################
+    ####################################################################################################################
     keys = pg.key.get_pressed()
     mouse.pos = np.array(mouse.get_pos())
     for e in pg.event.get():
         if e.type == pg.QUIT:
             run = False
-        ################
+        #######################################################
         #   KEYBOARD   #
-        ################
+        #######################################################
         if e.type == pg.KEYDOWN:
             if e.key == pg.K_ESCAPE:
                 if not paused:
@@ -619,24 +652,17 @@ while run:
         if e.type == pg.KEYUP:
             if e.key == pg.K_LSHIFT:
                 MOUSE_STATES.SHIFT = False
-        ################
+        #######################################################
         # MOUSE BUTTON #
-        ################
+        #######################################################
         if e.type == pg.MOUSEBUTTONDOWN:
             if e.button == 1:
                 if not paused:
-                    if any(GLOBALS.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
-                        GLOBALS.MOUSE_ACTION = MOUSE_STATES.DRAGGING
-                        TSD.START = np.array(tuple(roundNumsToNearest(mouse.pos, GLOBALS.GRID_SIZE)))
-                        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, GLOBALS.ACTION_TYPE)
-                        shapes_group.add(TSD.CURRENT_SHAPE)
-                    if GLOBALS.ACTION_TYPE == ACTION_TYPES.DELETE:
-                        GLOBALS.MOUSE_ACTION = MOUSE_STATES.DRAGGING
-                        TSD.START = np.array(tuple(mouse.pos))
-                        TSD.CURRENT_SHAPE = DeleteBox(TSD.START, TSD.SIZE)
-                        shapes_group.add(TSD.CURRENT_SHAPE)
-                    if slider1.hovered():
-                        slider1.being_dragged = True
+                    if not any(mouse.mask.overlap(item.mask,
+                        (item.rect.x - mouse.pos[0], item.rect.y - mouse.pos[1])) for item in ui_group):
+                        startShape()
+                    if rgb_slider.hovered():
+                        rgb_slider.mouse_dragging = True
                 if paused:
                     if Pause_Screen.buttons['res'].get_hovered():
                         paused = False
@@ -654,15 +680,16 @@ while run:
             if e.button == 1:
                 if not paused:
                     endShape()
-                    slider1.being_dragged = False
-        ################
+                    rgb_slider.mouse_dragging = False
+        #######################################################
         # SCROLL WHEEL #
-        ################
+        #######################################################
         if e.type == pg.MOUSEWHEEL:
             scroll_through_action_types(e)
-    ##################################
+
+    ####################################################################################################################
     #        RENDER GAME HERE        #
-    ##################################
+    ####################################################################################################################
     for shape in shapes_group:
         shape.draw(SCREEN)
         if shape.mask.overlap(mouse.mask, (mouse.pos[0] - shape.rect.x, mouse.pos[1] - shape.rect.y)):
@@ -680,20 +707,23 @@ while run:
                     TSD.SHIFT_RATIO = 0.951056516295 / 0.904508497185
                 else:
                     TSD.SHIFT_RATIO = 1 / 1
-                startShape(Color(219, 55, 172, a=100), GLOBALS.GRID_SIZE,
+                drawShape(Color(219, 55, 172, a=100), GLOBALS.GRID_SIZE,
                              TSD.SHIFT_RATIO)
             elif GLOBALS.ACTION_TYPE == ACTION_TYPES.DELETE:
-                startShape()
+                drawShape()
 
         HotBar.draw(SCREEN)
-        slider1.draw(SCREEN)
+        rgb_slider.draw(SCREEN)
     elif paused:
         Pause_Screen.draw(SCREEN)
 
     Cursor.draw(SCREEN)
     FpsCounter.draw(SCREEN)
-    pg.display.update()
 
+    ####################################################################################################################
+    #        RENDER GAME HERE        #
+    ####################################################################################################################
+    pg.display.update()
     DT = CLOCK.tick(120)
 
 pg.quit()
