@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="add stuff">
-      <change afterPath="$PROJECT_DIR$/Source Files/Images/slider_backgrounds/rainbow_strip.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Update main.py&#10;Add rainbow_strip.png">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source Files/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source Files/main.py" afterDir="false" />
     </list>
@@ -61,7 +59,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "master",
     "last_opened_file_path": "C:/Users/adote/PycharmProjects/Pygame Shape Maker/Source Files/images/slider_backgrounds",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+    "settings.editor.selected.configurable": "preferences.keymap"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -77,6 +75,9 @@
     </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration>C:\Users\adote\AppData\Roaming\Subversion</configuration>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="" />
@@ -101,7 +102,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719441335352</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Update main.py&#10;Add rainbow_strip.png">
+      <option name="closed" value="true" />
+      <created>1719480389780</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1719480389780</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -149,6 +158,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="add stuff" />
-    <option name="LAST_COMMIT_MESSAGE" value="add stuff" />
+    <MESSAGE value="Update main.py&#10;Add rainbow_strip.png" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update main.py&#10;Add rainbow_strip.png" />
   </component>
 </project>
