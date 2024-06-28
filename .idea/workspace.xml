@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Edited main.py">
+    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Updated main.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source Files/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source Files/main.py" afterDir="false" />
     </list>
@@ -126,7 +126,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719509045934</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1719552461358</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1719552461358</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -176,6 +184,7 @@
     <MESSAGE value="add stuff" />
     <MESSAGE value="Update main.py&#10;Add rainbow_strip.png" />
     <MESSAGE value="Edited main.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="Edited main.py" />
+    <MESSAGE value="Updated main.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated main.py" />
   </component>
 </project>
