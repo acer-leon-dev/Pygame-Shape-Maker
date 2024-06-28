@@ -59,7 +59,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "master",
     "last_opened_file_path": "C:/Users/adote/PycharmProjects/Pygame Shape Maker/Source Files/images/slider_backgrounds",
-    "settings.editor.selected.configurable": "advanced.settings"
+    "settings.editor.selected.configurable": "editor.preferences.folding"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -142,7 +142,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719560744678</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1719576880893</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1719576880893</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

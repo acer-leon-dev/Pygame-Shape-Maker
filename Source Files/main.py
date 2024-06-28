@@ -1,9 +1,10 @@
 import pygame as pg
-from pygame import Color as Color, Vector2 as Vec2, surfarray
+from pygame import Color, Rect, Surface, Mask, Vector2 as Vec2, surfarray
 import numpy as np
 from numpy import array as arr
 from dataclasses import dataclass
 import colorsys
+import pyautogui as pyag
 
 pg.init()
 class WINDOW:
@@ -13,16 +14,20 @@ class WINDOW:
     height = 720
     w = width
     h = height
+    fps = 120
 WINDOW.w = 1280
 WINDOW.h = 720
 SCREEN = pg.display.set_mode((WINDOW.w, WINDOW.h), flags=pg.DOUBLEBUF)
 SCREEN.set_alpha(None)
 CLOCK = pg.time.Clock()
 mouse = pg.mouse
+mouse.pos = mouse.get_pos()
 pg.mouse.set_visible(False)
-mouse.rect = pg.Rect(0, 0, 1, 1)
+mouse.rect = Rect(0, 0, 1, 1)
 mouse.mask = pg.Mask(size=mouse.rect.size, fill=True)
 DT = 0
+
+
 
 def roundNumToNearest(value, round_to):
     value = round(value)
@@ -180,7 +185,7 @@ class FpsCounter:
 
 class Grid():
     def __init__(self, step_x, step_y, color=Color(64, 64, 64), width=1):
-        self.surf = pg.Surface((WINDOW.w, WINDOW.h))
+        self.surf = Surface((WINDOW.w, WINDOW.h))
         self.surf.set_colorkey(COLORS.COLORKEY)
         self.surf.fill(self.surf.get_colorkey())
         if step_x > 0:
@@ -201,8 +206,8 @@ class Shape(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.polygons = None
         self.shape = shape
-        self.shape_color = pg.Color(128, 128, 128)
-        self.image = pg.Surface(size)
+        self.shape_color = Color(128, 128, 128)
+        self.image = Surface(size)
         self.image.set_colorkey(Color(1, 1, 1))
         self.image.fill(self.image.get_colorkey())
         self.rect = self.image.get_rect()
@@ -246,8 +251,8 @@ class Shape(pg.sprite.Sprite):
 class DeleteBox(pg.sprite.Sprite):
     def __init__(self, pos, size):
         pg.sprite.Sprite.__init__(self)
-        self.color = pg.Color(30, 31, 82)
-        self.image = pg.Surface(size)
+        self.color = Color(30, 31, 82)
+        self.image = Surface(size)
         self.image.set_colorkey(Color(1, 1, 1))
         self.image.fill(self.color)
         self.rect = self.image.get_rect()
@@ -357,8 +362,8 @@ def scroll_through_action_types(event):
 
 class ShapeButton():
     def __init__(self, rect, action_type, bg_color, border_color, border_width, shape_color, shape_scale, ):
-        self.rect = pg.Rect(rect)
-        self.surf = pg.Surface(self.rect.size)
+        self.rect = Rect(rect)
+        self.surf = Surface(self.rect.size)
         self.bg_color = bg_color
         self.surf.fill(self.bg_color)
         self.border_color = border_color
@@ -406,8 +411,8 @@ class TextButton():
         self.bg_color = bg_color
         self.border_color = border_color
         self.border_width = border_width
-        self.rect = pg.Rect(rect)
-        self.surf = pg.Surface(self.rect.size)
+        self.rect = Rect(rect)
+        self.surf = Surface(self.rect.size)
         self.surf.fill(self.bg_color)
         font = pg.font.SysFont(FONTS.default, text_height)
         self.text_surf = font.render(text, True, Color('WHITE'))
@@ -429,7 +434,7 @@ class Hotbar:
         self.button_bd_color = Color(border_color)
         self.border_width = border_width
 
-        self.surf = pg.Surface((num_buttons * button_size[0] + num_buttons * padding, button_size[1]))
+        self.surf = Surface((num_buttons * button_size[0] + num_buttons * padding, button_size[1]))
         self.rect = self.surf.get_rect(topleft=(10, 10))
         self.surf.set_colorkey((1, 1, 1));
         self.surf.fill(self.surf.get_colorkey())
@@ -503,45 +508,43 @@ class Slider():
         idle = {'bg': Color('WHITE'), 'bd': Color('WHITE')}
         active = {'bg': Color('BLACK'), 'bd': Color('WHITE')}
         current = {'bg': idle['bg'], 'bd': idle['bd']}
-        border_thickness = 4
 
-    def __init__(self, min, max, rect, texture: pg.Surface, border_color, pick_size):
+    def __init__(self, min, max, initial, rect, texture: Surface,
+                 pick_size=(20, 20), border_color=Color(64, 64, 64), border_thickness=5, pick_border_thickness=5):
         self.mouse_dragging = False
         self.min = min
         self.max = max
-        self.value = self.min
-        self.fraction = 0
+        self.value = initial
+        self.fraction = self.value/self.max
 
-        self.rect = pg.Rect(rect)
-        self.surf = pg.Surface(self.rect.size)
+        self.rect = Rect(rect)
+        self.surf = Surface(self.rect.size)
 
-        self.pick_width = pick_size[0]
-        self.pick_height =  pick_size[1]
-        self.pick_rect = pg.Rect(0, 0, self.pick_width, self.pick_height)
-        self.pick = pg.Surface(self.pick_rect.size)
+        self.pick = Surface((pick_size[0], pick_size[1]))
         self.pick.set_colorkey(Color(1, 1, 1));
         self.pick.fill(self.pick.get_colorkey())
-        self.pick_rect = self.pick.get_rect(center=(self.pick.get_width() / 2, self.rect.h))
+        self.pick_rect = self.pick.get_rect(center=(self.rect.w*self.fraction + pick_size[0] / 2, self.rect.h))
+        self.pick_border_thickness = pick_border_thickness
         pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle)
         pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle + arr((0, -1)),
-                        width=self.PD.border_thickness)
+                        width=self.pick_border_thickness)
 
         # Create bar
         self.texture = texture
         self.border_color = border_color
-        self.border_width = 5
-        self.border_rect = pg.Rect(self.pick_rect.w / 2, 0, *self.rect.size).inflate(self.border_width, self.border_width)
-        self.bar_rect = pg.Rect(rect)
-        self.bar = pg.Surface(self.bar_rect.size)
+        self.border_thickness = border_thickness
+        self.border_rect = Rect(self.pick_rect.w / 2, 0, *self.rect.size).inflate(self.border_thickness*2, 0)
+        self.bar_rect = Rect(rect)
+        self.bar = Surface(self.bar_rect.size)
         self.bar.set_colorkey(Color(1, 1, 1));
         self.bar.fill(self.bar.get_colorkey())
         self.bar.blit(pg.transform.scale(texture, self.bar_rect.size), (0, 0))
 
 
-        self.rect = pg.Rect((self.bar_rect.topleft),
+        self.rect = Rect((self.bar_rect.topleft),
                             (self.bar_rect.w + self.pick_rect.w,
-                             self.bar_rect.h + self.pick.get_height() / 3 + self.PD.border_thickness))
-        self.surf = pg.Surface(self.rect.size)
+                             self.bar_rect.h + self.pick.get_height() / 3 + self.border_thickness))
+        self.surf = Surface(self.rect.size)
         self.surf.set_colorkey(Color(1, 1, 1));
         self.surf.fill(self.surf.get_colorkey())
 
@@ -555,12 +558,20 @@ class Slider():
             self.PD.current['bg'] = self.PD.idle['bg']
             self.PD.current['bd'] = self.PD.idle['bd']
 
-        self.update()
+        self.update(cursor)
+
         self.surf.fill(self.surf.get_colorkey())
         self.surf.blit(self.bar, (self.pick_rect.w / 2, 0))
-        pg.draw.rect(self.surf, self.border_color, self.border_rect, width=self.border_width)
+        pg.draw.rect(self.surf, self.border_color, self.border_rect, width=self.border_thickness)
         self.surf.blit(self.pick, self.pick_rect.topleft)
         display.blit(self.surf, self.rect)
+        return self
+    def startDragging(self, cursor):
+        self.mouse_dragging = True
+        cursor.hide()
+    def stopDragging(self, cursor):
+        self.mouse_dragging = False
+        cursor.show()
 
     def get(self):
         return self.value
@@ -568,13 +579,18 @@ class Slider():
     def mouse_hovering(self):
         return masks_collide(self, mouse)
 
-    def update(self):
+    def update(self, cursor=None):
         if self.mouse_dragging:
+            if cursor:
+                if cursor.visible and self.mouse_hovering():
+                    cursor.hide()
+                elif not cursor.visible and not self.mouse_hovering():
+                    cursor.show()
             half_pick_width = self.pick_rect.w / 2
-            if mouse.rect.x <= self.rect.x + half_pick_width:
+            if mouse.rect.x < self.rect.x + half_pick_width:
                 self.fraction = 0
                 self.pick_rect.centerx = half_pick_width
-            elif mouse.rect.x >= self.rect.x + self.bar_rect.width + half_pick_width:
+            elif mouse.rect.x > self.rect.x + self.bar_rect.width + half_pick_width:
                 self.fraction = 1
                 self.pick_rect.centerx = self.rect.width - half_pick_width
             else:
@@ -588,13 +604,12 @@ class Slider():
 
         self.pick.fill(self.pick.get_colorkey())
         pg.draw.polygon(self.pick, self.PD.current['bd'], POLYGONS(self.pick_rect.size).triangle)
-        border_ratio_width =  (self.pick_rect.w - 2 * self.PD.border_thickness) / self.pick_rect.w
-        border_ratio_height =  (self.pick_rect.h - 2 * self.PD.border_thickness) / self.pick_rect.h
-        print(border_ratio_width)
+        pick_border_ratio_width =  (self.pick_rect.w - 2 * self.pick_border_thickness) / self.pick_rect.w
+        pick_border_ratio_height =  (self.pick_rect.h - 2 * self.pick_border_thickness) / self.pick_rect.h
         pg.draw.polygon(self.pick, self.PD.current['bg'],
-                        POLYGONS((arr(self.pick_rect.size) * arr((border_ratio_width, border_ratio_height)))).triangle +
-                        arr((self.pick_width, self.pick_height)) / 2 - arr((self.pick_width, self.pick_height)) *
-                        arr((border_ratio_width, border_ratio_height)) / 2)
+                        POLYGONS((arr(self.pick_rect.size) * arr((pick_border_ratio_width, pick_border_ratio_height)))).triangle +
+                        arr((self.pick_rect.w, self.pick_rect.h)) / 2 - arr((self.pick_rect.w, self.pick_rect.h)) *
+                        arr((pick_border_ratio_width, pick_border_ratio_height)) / 2)
 
         self.bar.blit(pg.transform.scale(self.texture, self.bar_rect.size), (0, 0))
 
@@ -604,107 +619,124 @@ class Slider():
 
 class TEXTURES:
     def hue_gradient(width, height, s, v):
-        surf = pg.Surface((width, height))
+        surf = Surface((width, height))
         pixels = surfarray.array3d(surf)
         for x in range(surf.get_width()):
             pixels[x, :] = hsv_to_rgb(360 * (x / surf.get_width()), s, v)
         return surfarray.make_surface(pixels)
 
     def saturation_gradient(width, height, h, v):
-        surf = pg.Surface((width, height))
+        surf = Surface((width, height))
         pixels = surfarray.array3d(surf)
         for x in range(surf.get_width()):
             pixels[x, :] = hsv_to_rgb(h, 100 * x / surf.get_width(), v)
         return surfarray.make_surface(pixels)
 
     def value_gradient(width, height, h, s):
-        surf = pg.Surface((width, height))
+        surf = Surface((width, height))
         pixels = surfarray.array3d(surf)
         for x in range(surf.get_width()):
             pixels[x, :] = hsv_to_rgb(h, s, 100 * x / surf.get_width())
         return surfarray.make_surface(pixels)
 class ColorSelector:
-    def __init__(self, rect, slider_height, padding, pick_size):
-        self.rect = pg.Rect(rect)
-        self.surf = pg.Surface(self.rect.size)
-
-        self.slider_positions = tuple((x + offset * padding, 0) for x, offset in enumerate(range(0, 3*slider_height, slider_height)))
-        print(self.slider_positions)
-
-        self.hue_slider = Slider(min=0, max=360, rect=(*self.slider_positions[0], self.rect.w, 25),
+    def __init__(self, rect, slider_height=50, padding=10, pick_size=(20, 20)):
+        self.slider_height = slider_height
+        self.slider_positions = tuple((0, y + offset * padding) for offset, y in enumerate(range(0, 3*slider_height, self.slider_height)))
+        self.rect = Rect(*rect[0:2], rect[2], 3 * slider_height + 3 * padding + pick_size[1])
+        self.surf = Surface(self.rect.size)
+        self.surf.set_colorkey(Color(1,1,1))
+        self.hue_slider = Slider(min=0, max=360, initial=0, rect=(*self.slider_positions[0], self.rect.w, slider_height),
                                  texture=TEXTURES.hue_gradient(self.rect.w, slider_height, s=100, v=100),
-                                 border_color=Color(64, 64, 64), pick_size=pick_size)
-        self.saturation_slider = Slider(min=0, max=100, rect=(*self.slider_positions[1], self.rect.w, 25),
+                                 border_color=Color(64, 64, 64), pick_size=pick_size, pick_border_thickness=3)
+        self.saturation_slider = Slider(min=0, max=100, initial=100, rect=(*self.slider_positions[1], self.rect.w, slider_height),
                                         texture=TEXTURES.saturation_gradient(self.rect.w, slider_height, h=0, v=100),
-                                        border_color=Color(64, 64, 64), pick_size=pick_size)
-        self.value_slider = Slider(min=0, max=100, rect=(*self.slider_positions[2], self.rect.w, 25),
+                                        border_color=Color(64, 64, 64), pick_size=pick_size, pick_border_thickness=3)
+        self.value_slider = Slider(min=0, max=100, initial=100, rect=(*self.slider_positions[2], self.rect.w, slider_height),
                                    texture=TEXTURES.value_gradient(self.rect.w, slider_height, h=0, s=100),
-                                   border_color=Color(64, 64, 64), pick_size=pick_size)
-        self.sliders = [self.hue_slider, self.saturation_slider, self.value_slider]
-
+                                   border_color=Color(64, 64, 64), pick_size=pick_size, pick_border_thickness=3)
+        self.sliders = (self.hue_slider, self.saturation_slider, self.value_slider)
+        for slider in self.sliders:
+            slider.bar_rect.inflate(-1, 0)
         self.hue = self.saturation_slider.get()
         self.saturation = self.saturation_slider.get()
         self.value = self.value_slider.get()
 
-        self.surf.blits(((slider.surf, pos) for slider, pos in zip(self.sliders, self.slider_positions)))
+        self.rect = self.rect.inflate(pick_size[0]+1, 0)
+        self.surf = pg.transform.scale(self.surf, self.rect.size)
+    def startDraggingSelectors(self, cursor):
+        for slider in self.sliders:
+            if slider.mouse_hovering():
+                slider.startDragging(cursor)
 
-        self.mask = ...
+    def stopDraggingSelectors(self, cursor):
+        for slider in self.sliders:
+            slider.stopDragging(cursor)
 
+    def get(self):
+        return Color(hsv_to_rgb(self.hue, self.saturation, self.value))
     def update(self):
-        self.hue_slider = Slider(0, 360,
-                                 (*self.slider_positions, 200, 25),
-                                 textures.hue_gradient(width, slider_height, s=100, v=100), Color(64, 64, 64))
-        self.saturation_slider = Slider(0, 100,
-                                        (*self.slider_positions, 200, 25),
-                                        textures.saturation_gradient(width, slider_height, h=0, v=100),
-                                        Color(64, 64, 64))
-        self.value_slider = Slider(0, 100,
-                                   (0, *self.slider_positions, 25),
-                                   textures.value_gradient(width, slider_height, h=0, s=100), Color(64, 64, 64))
-
-        self.hue = self.saturation_slider.get()
+        self.hue = self.hue_slider.get()
         self.saturation = self.saturation_slider.get()
         self.value = self.value_slider.get()
-    def draw(self, display):
-        self.surf.blits(((slider, pos) for slider, pos in zip(self.sliders, self.slider_positions)))
-        display.blit(self.surf)
 
+        self.hue_slider.texture = TEXTURES.hue_gradient(self.rect.w, self.slider_height, s=self.saturation, v=self.value)
+        self.saturation_slider.texture = TEXTURES.saturation_gradient(self.rect.w, self.slider_height, h=self.hue, v=self.value)
+        self.value_slider.texture = TEXTURES.value_gradient(self.rect.w, self.slider_height, h=self.hue, s=self.saturation)
+
+        self.surf.fill(self.surf.get_colorkey())
+        self.mask = pg.mask.from_surface(self.surf)
+    def draw(self, display):
+        self.update()
+        for slider in self.sliders:
+            slider.update(cursor)
+            slider.draw(self.surf)
+            display.blit(slider.surf, slider.rect)
+        display.blit(self.surf, self.rect)
+"""
 # Hue slider
 hue_slider = Slider(0, 360, (1070, 50, 200, 25), TEXTURES.hue_gradient(200, 25, s=100, v=100), Color(64, 64, 64), (20, 20))
 hue_slider.rect.x -= hue_slider.pick_rect.w
 
 # Saturation slider
-sat_slider = Slider(0, 100, (1070, 85, 200, 25), TEXTURES.saturation_gradient(200, 25, h=0, v=100), Color(64, 64, 64), (20, 20))
+sat_slider = Slider(0, 100, (1070, 85, 200, 25), TEXTURES.saturation_gradient(200, 25, h=0, v=100), Color(64, 64, 64), border_color(20, 20))
 sat_slider.rect.x -= sat_slider.pick_rect.w
 
 val_slider = Slider(0, 100, (1070, 120, 200, 25), TEXTURES.value_gradient(200, 25, h=0, s=100), Color(64, 64, 64), (20, 20))
 val_slider.rect.x -= val_slider.pick_rect.w
-
+"""
 class Cursor:
     def __init__(self):
-        self.rect = None
-        self.mask = None
-        self.color = COLORS.GREEN
-        self.surf = pg.Surface((6, 6))
+        self.visible: bool = True
+        self.rect: Rect = None
+        self.mask: Mask = None
+        self.color: Color = COLORS.GREEN
+        self.surf: Surface = Surface((6, 6))
         self.surf.set_colorkey(Color(1, 1, 1))
         self.update()
 
+    def hide(self):
+        self.visible = False
+        return self
+    def show(self):
+        self.visible = True
+        return self
     def update(self):
         self.surf.fill(self.surf.get_colorkey())
         pg.draw.rect(self.surf, self.color, ((2, 0), (2, 6)))
         pg.draw.rect(self.surf, self.color, ((0, 2), (6, 2)))
         self.mask = pg.mask.from_surface(self.surf)
-
+        return self
     def draw(self, display):
-        self.rect = self.surf.get_rect(center=(mouse.rect.topleft))
-        display.blit(self.surf, self.rect)
-
+        if self.visible:
+            self.rect = self.surf.get_rect(center=(mouse.rect.topleft))
+            display.blit(self.surf, self.rect)
+        return self
 
 
 class ClickTextButton():
     def __init__(self, rect, text, text_height, text_color, bg_color, border_color):
-        self.rect = pg.Rect(rect)
-        self.surf = pg.Surface(self.rect.size)
+        self.rect = Rect(rect)
+        self.surf = Surface(self.rect.size)
         self.bg_color = Color(bg_color)
         self.surf.fill(self.bg_color)
         self.border_color = border_color
@@ -732,11 +764,11 @@ class ClickTextButton():
 
 class PauseScreen:
     def __init__(self):
-        self.surf = pg.Surface((WINDOW.w, WINDOW.h))
+        self.surf = Surface((WINDOW.w, WINDOW.h))
         self.screen_rect = self.surf.get_rect()
         self.surf.set_alpha(128)
 
-        self.background = pg.Surface(self.surf.get_size())
+        self.background = Surface(self.surf.get_size())
         self.background.fill(Color(64, 64, 64))
         num_buttons = 3
         self.button_size = (300, 100)
@@ -776,7 +808,7 @@ class PauseScreen:
         if self.buttons['exit'].get_mouse_hovering():
             run = False
 
-colorselector = ColorSelector((WINDOW.w/2, WINDOW.h/2, 400, 300), 50, 10, (20, 20)),
+colorselector = ColorSelector((700, 100, 200, None), 20, 10, (16, 16))
 fps_counter = FpsCounter(COLORS.WHITE, 22)
 grid = Grid(GLOBALS.GRID_SIZE, GLOBALS.GRID_SIZE)
 cursor = Cursor()
@@ -784,18 +816,18 @@ hotbar = Hotbar(7, (50, 50), 5, Color(70, 70, 70), Color(40, 40, 40), 3)
 pause_screen = PauseScreen()
 
 shapes_group = pg.sprite.Group()
-ui_group = [hotbar, hue_slider, sat_slider, val_slider]
+ui_group = [hotbar]
 
 GLOBALS.PAUSED = False
 
 run = True
 while run:
+    mouse.rect.topleft = mouse.pos = mouse.get_pos()
     SCREEN.fill(COLORS.BLACK)
     ####################################################################################################################
     #         POLL FOR EVENTS        #
     ####################################################################################################################
     keys = pg.key.get_pressed()
-    mouse.rect.topleft = mouse.get_pos()
     for e in pg.event.get():
         if e.type == pg.QUIT:
             run = False
@@ -821,28 +853,25 @@ while run:
         if e.type == pg.MOUSEBUTTONDOWN:
             if e.button == 1:
                 if not GLOBALS.PAUSED:
-                    if not any(mouse.mask.overlap(item.mask,
-                                                  (item.rect.x - mouse.rect.x, item.rect.y - mouse.rect.y)) for item in
+                    if not any(masks_collide(mouse, object) for object in
                                ui_group):
                         startShape()
-                    for item in ui_group:
-                        if type(item) == Slider:
-                            if item.mouse_hovering():
-                                item.mouse_dragging = True
+
+                    colorselector.startDraggingSelectors(cursor)
+
                     hotbar.changeAction(e)
+
                 if GLOBALS.PAUSED:
                     pause_screen.input()
             if e.button == 3:
                 if not GLOBALS.PAUSED:
                     cancelShape()
+        #######################################################
         if e.type == pg.MOUSEBUTTONUP:
             if e.button == 1:
                 if not GLOBALS.PAUSED:
                     endShape()
-                    for item in ui_group:
-                        if type(item) == Slider:
-                            if item.mouse_dragging:
-                                item.mouse_dragging = False
+                    colorselector.stopDraggingSelectors(cursor)
         #######################################################
         # SCROLL WHEEL #
         #######################################################
@@ -874,9 +903,10 @@ while run:
             elif TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
                 drawShape()
 
-        for item in ui_group:
-            item.draw(SCREEN)
+        for object in ui_group:
+            object.draw(SCREEN)
 
+        colorselector.draw(SCREEN)
     elif GLOBALS.PAUSED:
         pause_screen.draw(SCREEN)
 
@@ -887,6 +917,6 @@ while run:
     #        RENDER GAME HERE        #
     ####################################################################################################################
     pg.display.update()
-    DT = CLOCK.tick(120)
+    DT = CLOCK.tick(WINDOW.fps)
 
 pg.quit()
