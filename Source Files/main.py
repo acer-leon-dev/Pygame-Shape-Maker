@@ -7,6 +7,8 @@ import colorsys
 import pyautogui as pyag
 
 pg.init()
+
+
 class WINDOW:
     x = None
     y = None
@@ -15,18 +17,16 @@ class WINDOW:
     w = width
     h = height
     fps = 120
+
+
 WINDOW.w = 1280
 WINDOW.h = 720
 SCREEN = pg.display.set_mode((WINDOW.w, WINDOW.h), flags=pg.DOUBLEBUF)
 SCREEN.set_alpha(None)
 CLOCK = pg.time.Clock()
 mouse = pg.mouse
-mouse.pos = mouse.get_pos()
 pg.mouse.set_visible(False)
-mouse.rect = Rect(0, 0, 1, 1)
-mouse.mask = pg.Mask(size=mouse.rect.size, fill=True)
 DT = 0
-
 
 
 def roundNumToNearest(value, round_to):
@@ -40,6 +40,7 @@ def roundNumToNearest(value, round_to):
     except ZeroDivisionError:
         return value
 
+
 def roundNumsToNearest(values, round_to):
     for value in values:
         value = round(value)
@@ -52,12 +53,15 @@ def roundNumsToNearest(values, round_to):
         except ZeroDivisionError:
             yield value
 
+
 def hsv_to_rgb(H, S, V):
     return arr((colorsys.hsv_to_rgb(H / 360, S / 100, V / 100))) * 255
 
+
 def masks_collide(object1, object2, offset=(0, 0)):
     return bool(object1.mask.overlap(object2.mask, (
-    object2.rect.x - object1.rect.x + offset[1], object2.rect.y - object1.rect.y + offset[1])))
+        object2.rect.x - object1.rect.x - offset[0], object2.rect.y - object1.rect.y - offset[1])))
+
 
 ########################################################################################################################
 ###############  CONSTANTS   #################################################################################
@@ -122,9 +126,11 @@ class POLYGONS:
         vertices *= arr((self.size[0], self.size[1]))
         return vertices
 
+
 @dataclass
 class FONTS:
     default = "bahnschrift"
+
 
 @dataclass
 class COLORS:
@@ -135,17 +141,19 @@ class COLORS:
     GREEN = Color(0, 255, 0)
     BLUE = Color(0, 0, 255)
 
+
 @dataclass
 class ACTION_TYPES:
+    DELETE = 'DELETE'
     RECTANGLE = 'RECTANGLE'
     CIRCLE = 'CIRCLE'
     TRIANGLE = 'TRIANGLE'
     PENTAGON = 'PENTAGON'
     STAR = 'STAR'
     HEXAGON = 'HEXAGON'
-    DELETE = 'DELETE'
     SHAPES = [RECTANGLE, CIRCLE, TRIANGLE, PENTAGON, STAR, HEXAGON]
-    ACTION_TYPES = [*SHAPES, DELETE]
+    ACTION_TYPES = [DELETE, *SHAPES]
+
 
 @dataclass
 class MOUSE_STATES:
@@ -153,10 +161,11 @@ class MOUSE_STATES:
     DRAGGING = 'DRAGGING'
     SHIFT = False
 
+
 ########################################################################################################################
 ###############  GLOBALS   #################################################################################
 ########################################################################################################################
-class TSD: # Temporary Shape Data
+class TSD:  # Temporary Shape Data
     SHAPE = None
     COLOR = Color((100, 100, 100))
     START = (0, 0)
@@ -167,9 +176,11 @@ class TSD: # Temporary Shape Data
     ACTION_TYPE = ACTION_TYPES.RECTANGLE
     MOUSE_ACTION = MOUSE_STATES.IDLE
 
+
 class GLOBALS:
     GRID_SIZE = 0
     PAUSED = False
+
 
 class FpsCounter:
     def __init__(self, color, text_height):
@@ -181,7 +192,8 @@ class FpsCounter:
     def draw(self, display):
         self.text = str(int(CLOCK.get_fps()))
         self.surf = self.font.render(self.text, True, self.color)
-        display.blit(self.surf, self.surf.get_rect(topright=(WINDOW.w, 0)))
+        display.blit(self.surf, self.surf.get_rect(bottomright=(WINDOW.w, WINDOW.h)))
+
 
 class Grid():
     def __init__(self, step_x, step_y, color=Color(64, 64, 64), width=1):
@@ -197,6 +209,7 @@ class Grid():
 
     def draw(self, display, special_flags=0):
         display.blit(self.surf, (0, 0), special_flags=special_flags)
+
 
 ########################################################################################################################
 ###############  CREATING NEW SHAPES   #################################################################################
@@ -248,6 +261,8 @@ class Shape(pg.sprite.Sprite):
     def draw(self, display):
         display.blit(self.image, self.rect)
         return self
+
+
 class DeleteBox(pg.sprite.Sprite):
     def __init__(self, pos, size):
         pg.sprite.Sprite.__init__(self)
@@ -280,21 +295,25 @@ class DeleteBox(pg.sprite.Sprite):
 
     def draw(self, display):
         display.blit(self.image, self.rect, special_flags=pg.BLEND_ADD)
+
+
 def startShape():
     if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
         TSD.MOUSE_ACTION = MOUSE_STATES.DRAGGING
-        TSD.START = arr(tuple(roundNumsToNearest(mouse.rect.topleft, GLOBALS.GRID_SIZE)))
+        TSD.START = arr(tuple(roundNumsToNearest(cursor.rect.topleft, GLOBALS.GRID_SIZE)))
         TSD.SHAPE = Shape(TSD.START, TSD.SIZE, TSD.ACTION_TYPE)
         shapes_group.add(TSD.SHAPE)
         TSD.COLOR = Color(219, 55, 172)
     if TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
         TSD.MOUSE_ACTION = MOUSE_STATES.DRAGGING
-        TSD.START = arr(tuple(mouse.rect.topleft))
+        TSD.START = arr(tuple(cursor.rect.topleft))
         TSD.SHAPE = DeleteBox(TSD.START, TSD.SIZE)
         shapes_group.add(TSD.SHAPE)
+
+
 def drawShape(step_size=0, shift_ratio=1 / 1):
     TSD.SHAPE.rect.topleft = TSD.START
-    TSD.END = arr(tuple(roundNumsToNearest(mouse.rect.topleft, step_size)))
+    TSD.END = arr(tuple(roundNumsToNearest(cursor.rect.topleft, step_size)))
     TSD.WIDTH = (TSD.END[0] - TSD.START[0])
     TSD.HEIGHT = (TSD.END[1] - TSD.START[1])
     if not MOUSE_STATES.SHIFT:
@@ -324,6 +343,8 @@ def drawShape(step_size=0, shift_ratio=1 / 1):
         TSD.SHAPE.resize_data(False, True)
     else:
         TSD.SHAPE.resize_data(False, False)
+
+
 def endShape():
     if TSD.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
         if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
@@ -333,31 +354,33 @@ def endShape():
         if TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
             for shape in shapes_group:
                 if shape != TSD.SHAPE:
-                    if masks_collide(shape, TSD.SHAPE) or masks_collide(shape, mouse):
+                    if masks_collide(shape, TSD.SHAPE) or masks_collide(shape, cursor):
                         shapes_group.remove(shape)
             shapes_group.remove(TSD.SHAPE)
         TSD.MOUSE_ACTION = MOUSE_STATES.IDLE
         TSD.START = TSD.END = TSD.SIZE = (0, 0)
         TSD.WIDTH = TSD.HEIGHT = 0
-def cancelShape():
+
+
+def cancelNewShape():
     if not GLOBALS.PAUSED:
         if TSD.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
             TSD.MOUSE_ACTION = MOUSE_STATES.IDLE
             shapes_group.remove(TSD.SHAPE)
 
 
-def scroll_through_action_types(event):
-    inc = 0
-    if e.precise_y > 0:
-        inc = 1
-    if e.precise_y < 0:
-        inc = -1
-    index = ACTION_TYPES.ACTION_TYPES.index(TSD.ACTION_TYPE) - inc
-    try:
-        TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[index]
-    except IndexError:
-        TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[0]
-    hotbar.changeAction()
+def applyRatioAndDrawShape():
+    if TSD.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
+        if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
+            if TSD.ACTION_TYPE == ACTION_TYPES.TRIANGLE:
+                TSD.SHIFT_RATIO = 4 / 3
+            elif TSD.ACTION_TYPE == ACTION_TYPES.PENTAGON or TSD.ACTION_TYPE == ACTION_TYPES.STAR:
+                TSD.SHIFT_RATIO = 0.951056516295 / 0.904508497185
+            else:
+                TSD.SHIFT_RATIO = 1 / 1
+            drawShape(GLOBALS.GRID_SIZE, TSD.SHIFT_RATIO)
+        elif TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
+            drawShape()
 
 
 class ShapeButton():
@@ -397,14 +420,16 @@ class ShapeButton():
                 pg.draw.polygon(self.shape_image, self.shape_color, self.polygons.hexagon)
         return self
 
-    def mouse_hovering(self):
-        return bool(masks_collide(self, mouse))
+    def cursor_hovering(self, cursor, offset=(0, 0)):
+        return masks_collide(self, cursor, offset)
 
     def draw(self, display, special_flags=0):
         self.surf.blit(self.shape_image, self.shape_rect)
         pg.draw.rect(self.surf, self.border_color, self.surf.get_rect(), width=self.border_width)
         display.blit(self.surf, self.rect, special_flags=special_flags)
         return self
+
+
 class TextButton():
     def __init__(self, rect, action_type, text, text_height, bg_color, border_color, border_width):
         self.action_type = action_type
@@ -420,14 +445,16 @@ class TextButton():
 
         self.mask = pg.mask.from_surface(self.surf)
 
-    def mouse_hovering(self):
-        return bool(masks_collide(self, mouse))
+    def cursor_hovering(self, cursor, offset=(0, 0)):
+        return masks_collide(self, cursor, offset)
 
     def draw(self, display):
         self.surf.blit(self.text_surf, self.text_rect)
         pg.draw.rect(self.surf, self.border_color, self.surf.get_rect(), width=self.border_width)
         display.blit(self.surf, self.rect)
         return self
+
+
 class Hotbar:
     def __init__(self, num_buttons, button_size, padding, background_color, border_color, border_width):
         self.button_bg_color = Color(background_color)
@@ -442,20 +469,21 @@ class Hotbar:
         self.button_poses = [(x + off * padding, 0) for off, x in
                              enumerate(range(0, button_size[0] * num_buttons, button_size[0]))]
         self.buttons = []
-        for pos, action_type in zip(self.button_poses[0:num_buttons - 1], ACTION_TYPES.SHAPES):
+
+        for pos, (action_type, text) in zip([*self.button_poses[0:1]], {ACTION_TYPES.DELETE: 'DEL'}.items()):
+            self.buttons.append(
+                TextButton((pos, button_size), action_type, text, 16,
+                           self.button_bg_color, self.button_bd_color, self.border_width))
+        for pos, action_type in zip(self.button_poses[len(self.buttons):num_buttons], ACTION_TYPES.SHAPES):
             self.buttons.append(
                 ShapeButton((pos, button_size), action_type, self.button_bg_color,
                             self.button_bd_color, self.border_width, COLORS.BLUE,
                             0.6))
-        for pos, (action_type, text) in zip([self.button_poses[num_buttons - 1]], {ACTION_TYPES.DELETE: 'DEL'}.items()):
-            self.buttons.append(
-                TextButton((pos, button_size), action_type, text, 16,
-                           self.button_bg_color, self.button_bd_color, self.border_width))
-
         self.changeAction()
 
     def draw(self, display):
         display.blit(self.surf, self.rect)
+        self.mask = pg.mask.from_surface(self.surf)
         return self
 
     def changeAction(self, event=None):
@@ -464,30 +492,34 @@ class Hotbar:
                 case pg.KEYDOWN | pg.KEYUP:
                     match event.key:
                         case pg.K_1:
-                            TSD.ACTION_TYPE = ACTION_TYPES.RECTANGLE
+                            TSD.ACTION_TYPE = self.buttons[0].action_type
                         case pg.K_2:
-                            TSD.ACTION_TYPE = ACTION_TYPES.CIRCLE
+                            TSD.ACTION_TYPE = self.buttons[1].action_type
                         case pg.K_3:
-                            TSD.ACTION_TYPE = ACTION_TYPES.TRIANGLE
+                            TSD.ACTION_TYPE = self.buttons[2].action_type
                         case pg.K_4:
-                            TSD.ACTION_TYPE = ACTION_TYPES.PENTAGON
+                            TSD.ACTION_TYPE = self.buttons[3].action_type
                         case pg.K_5:
-                            TSD.ACTION_TYPE = ACTION_TYPES.STAR
+                            TSD.ACTION_TYPE = self.buttons[4].action_type
                         case pg.K_6:
-                            TSD.ACTION_TYPE = ACTION_TYPES.HEXAGON
-                        case pg.K_d:
-                            TSD.ACTION_TYPE = ACTION_TYPES.DELETE
+                            TSD.ACTION_TYPE = self.buttons[5].action_type
+                        case pg.K_7:
+                            TSD.ACTION_TYPE = self.buttons[6].action_type
                 case pg.MOUSEBUTTONDOWN | pg.MOUSEBUTTONUP:
-                    if not masks_collide(mouse, self):
+                    if not masks_collide(cursor, self):
                         return
                     for button in self.buttons:
-                        if not masks_collide(mouse, button, (10, 10)):
+                        if not masks_collide(button, cursor, (10, 10)):
                             continue
                         TSD.ACTION_TYPE = button.action_type
+                        break
                 case pg.MOUSEWHEEL:
-                    increment = 1 if e.precise_y > 0 else -1
-                    index = ACTION_TYPES.ACTION_TYPES.index(TSD.ACTION_TYPE) - increment
-                    TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[index]
+                    increment = 1 if e.precise_y < 0 else -1
+                    index = ACTION_TYPES.ACTION_TYPES.index(TSD.ACTION_TYPE) + increment
+                    try:
+                        TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[index]
+                    except IndexError:
+                        TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[0]
         except:
             pass
 
@@ -497,11 +529,10 @@ class Hotbar:
             else:
                 bg_color = button.bg_color + Color(30, 30, 60)
             button.surf.fill(bg_color)
-
             button.draw(self.surf)
-        self.mask = pg.mask.from_surface(self.surf)
 
         return self
+
 
 class Slider():
     class PD:
@@ -511,11 +542,11 @@ class Slider():
 
     def __init__(self, min, max, initial, rect, texture: Surface,
                  pick_size=(20, 20), border_color=Color(64, 64, 64), border_thickness=5, pick_border_thickness=5):
-        self.mouse_dragging = False
+        self.cursor_dragging = False
         self.min = min
         self.max = max
         self.value = initial
-        self.fraction = self.value/self.max
+        self.fraction = self.value / self.max
 
         self.rect = Rect(rect)
         self.surf = Surface(self.rect.size)
@@ -523,7 +554,7 @@ class Slider():
         self.pick = Surface((pick_size[0], pick_size[1]))
         self.pick.set_colorkey(Color(1, 1, 1));
         self.pick.fill(self.pick.get_colorkey())
-        self.pick_rect = self.pick.get_rect(center=(self.rect.w*self.fraction + pick_size[0] / 2, self.rect.h))
+        self.pick_rect = self.pick.get_rect(center=(self.rect.w * self.fraction + pick_size[0] / 2, self.rect.h))
         self.pick_border_thickness = pick_border_thickness
         pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle)
         pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(self.pick.get_size()).triangle + arr((0, -1)),
@@ -533,32 +564,31 @@ class Slider():
         self.texture = texture
         self.border_color = border_color
         self.border_thickness = border_thickness
-        self.border_rect = Rect(self.pick_rect.w / 2, 0, *self.rect.size).inflate(self.border_thickness*2, 0)
+        self.border_rect = Rect(self.pick_rect.w / 2, 0, *self.rect.size).inflate(self.border_thickness * 2, 0)
         self.bar_rect = Rect(rect)
         self.bar = Surface(self.bar_rect.size)
         self.bar.set_colorkey(Color(1, 1, 1));
         self.bar.fill(self.bar.get_colorkey())
         self.bar.blit(pg.transform.scale(texture, self.bar_rect.size), (0, 0))
 
-
         self.rect = Rect((self.bar_rect.topleft),
-                            (self.bar_rect.w + self.pick_rect.w,
-                             self.bar_rect.h + self.pick.get_height() / 3 + self.border_thickness))
+                         (self.bar_rect.w + self.pick_rect.w,
+                          self.bar_rect.h + self.pick.get_height() / 3 + self.border_thickness))
         self.surf = Surface(self.rect.size)
         self.surf.set_colorkey(Color(1, 1, 1));
         self.surf.fill(self.surf.get_colorkey())
 
         self.update()
 
-    def draw(self, display):
-        if self.mouse_hovering() or self.mouse_dragging:
+    def draw(self, display, cursor, mask_offset=(0, 0)):
+        if self.cursor_hovering(mask_offset) or self.cursor_dragging:
             self.PD.current['bg'] = self.PD.active['bg']
             self.PD.current['bd'] = self.PD.active['bd']
         else:
             self.PD.current['bg'] = self.PD.idle['bg']
             self.PD.current['bd'] = self.PD.idle['bd']
 
-        self.update(cursor)
+        self.update(cursor, mask_offset)
 
         self.surf.fill(self.surf.get_colorkey())
         self.surf.blit(self.bar, (self.pick_rect.w / 2, 0))
@@ -566,37 +596,40 @@ class Slider():
         self.surf.blit(self.pick, self.pick_rect.topleft)
         display.blit(self.surf, self.rect)
         return self
+
     def startDragging(self, cursor):
-        self.mouse_dragging = True
+        self.cursor_dragging = True
         cursor.hide()
+
     def stopDragging(self, cursor):
-        self.mouse_dragging = False
+        self.cursor_dragging = False
         cursor.show()
 
     def get(self):
         return self.value
 
-    def mouse_hovering(self):
-        return masks_collide(self, mouse)
+    def cursor_hovering(self, offset=(0, 0)):
+        return masks_collide(self, cursor, offset)
 
-    def update(self, cursor=None):
-        if self.mouse_dragging:
+    def update(self, cursor=None, mask_offset=(0, 0)):
+        if self.cursor_dragging:
             if cursor:
-                if cursor.visible and self.mouse_hovering():
+                if cursor.visible and self.cursor_hovering(mask_offset):
                     cursor.hide()
-                elif not cursor.visible and not self.mouse_hovering():
+                elif not cursor.visible and not self.cursor_hovering(mask_offset):
                     cursor.show()
             half_pick_width = self.pick_rect.w / 2
-            if mouse.rect.x < self.rect.x + half_pick_width:
+            if cursor.rect.x - mask_offset[0] < + self.rect.x + half_pick_width:
                 self.fraction = 0
                 self.pick_rect.centerx = half_pick_width
-            elif mouse.rect.x > self.rect.x + self.bar_rect.width + half_pick_width:
+            elif cursor.rect.x - mask_offset[0] > + self.rect.x + self.bar_rect.width + half_pick_width:
                 self.fraction = 1
                 self.pick_rect.centerx = self.rect.width - half_pick_width
             else:
-                self.fraction = ((mouse.rect.x) - self.rect.x - half_pick_width) / (self.bar_rect.width)
-                self.pick_rect.centerx = mouse.rect.x - self.rect.x
-
+                self.fraction = ((cursor.rect.x - mask_offset[0]) - self.rect.x - half_pick_width) / (
+                    self.bar_rect.width)
+                self.pick_rect.centerx = cursor.rect.x - self.rect.x - mask_offset[0]
+            print(self.pick_rect.centerx)
             self.PD.current['bg'] = self.PD.active['bg']
             self.PD.current['bd'] = self.PD.active['bd']
 
@@ -604,17 +637,17 @@ class Slider():
 
         self.pick.fill(self.pick.get_colorkey())
         pg.draw.polygon(self.pick, self.PD.current['bd'], POLYGONS(self.pick_rect.size).triangle)
-        pick_border_ratio_width =  (self.pick_rect.w - 2 * self.pick_border_thickness) / self.pick_rect.w
-        pick_border_ratio_height =  (self.pick_rect.h - 2 * self.pick_border_thickness) / self.pick_rect.h
+        pick_border_ratio_width = (self.pick_rect.w - 2 * self.pick_border_thickness) / self.pick_rect.w
+        pick_border_ratio_height = (self.pick_rect.h - 2 * self.pick_border_thickness) / self.pick_rect.h
         pg.draw.polygon(self.pick, self.PD.current['bg'],
-                        POLYGONS((arr(self.pick_rect.size) * arr((pick_border_ratio_width, pick_border_ratio_height)))).triangle +
+                        POLYGONS((arr(self.pick_rect.size) * arr(
+                            (pick_border_ratio_width, pick_border_ratio_height)))).triangle +
                         arr((self.pick_rect.w, self.pick_rect.h)) / 2 - arr((self.pick_rect.w, self.pick_rect.h)) *
                         arr((pick_border_ratio_width, pick_border_ratio_height)) / 2)
 
         self.bar.blit(pg.transform.scale(self.texture, self.bar_rect.size), (0, 0))
 
         self.mask = pg.mask.from_surface(self.surf)
-
 
 
 class TEXTURES:
@@ -638,20 +671,26 @@ class TEXTURES:
         for x in range(surf.get_width()):
             pixels[x, :] = hsv_to_rgb(h, s, 100 * x / surf.get_width())
         return surfarray.make_surface(pixels)
+
+
 class ColorSelector:
     def __init__(self, rect, slider_height=50, padding=10, pick_size=(20, 20)):
         self.slider_height = slider_height
-        self.slider_positions = tuple((0, y + offset * padding) for offset, y in enumerate(range(0, 3*slider_height, self.slider_height)))
+        self.slider_positions = tuple(
+            (0, y + offset * padding) for offset, y in enumerate(range(0, 3 * slider_height, self.slider_height)))
         self.rect = Rect(*rect[0:2], rect[2], 3 * slider_height + 3 * padding + pick_size[1])
         self.surf = Surface(self.rect.size)
-        self.surf.set_colorkey(Color(1,1,1))
-        self.hue_slider = Slider(min=0, max=360, initial=0, rect=(*self.slider_positions[0], self.rect.w, slider_height),
+        self.surf.set_colorkey(Color(1, 1, 1))
+        self.hue_slider = Slider(min=0, max=360, initial=0,
+                                 rect=(*self.slider_positions[0], self.rect.w, slider_height),
                                  texture=TEXTURES.hue_gradient(self.rect.w, slider_height, s=100, v=100),
                                  border_color=Color(64, 64, 64), pick_size=pick_size, pick_border_thickness=3)
-        self.saturation_slider = Slider(min=0, max=100, initial=100, rect=(*self.slider_positions[1], self.rect.w, slider_height),
+        self.saturation_slider = Slider(min=0, max=100, initial=100,
+                                        rect=(*self.slider_positions[1], self.rect.w, slider_height),
                                         texture=TEXTURES.saturation_gradient(self.rect.w, slider_height, h=0, v=100),
                                         border_color=Color(64, 64, 64), pick_size=pick_size, pick_border_thickness=3)
-        self.value_slider = Slider(min=0, max=100, initial=100, rect=(*self.slider_positions[2], self.rect.w, slider_height),
+        self.value_slider = Slider(min=0, max=100, initial=100,
+                                   rect=(*self.slider_positions[2], self.rect.w, slider_height),
                                    texture=TEXTURES.value_gradient(self.rect.w, slider_height, h=0, s=100),
                                    border_color=Color(64, 64, 64), pick_size=pick_size, pick_border_thickness=3)
         self.sliders = (self.hue_slider, self.saturation_slider, self.value_slider)
@@ -661,11 +700,12 @@ class ColorSelector:
         self.saturation = self.saturation_slider.get()
         self.value = self.value_slider.get()
 
-        self.rect = self.rect.inflate(pick_size[0]+1, 0)
+        self.rect = self.rect.inflate(pick_size[0] + 1, 0)
         self.surf = pg.transform.scale(self.surf, self.rect.size)
+
     def startDraggingSelectors(self, cursor):
         for slider in self.sliders:
-            if slider.mouse_hovering():
+            if slider.cursor_hovering(self.rect.topleft):
                 slider.startDragging(cursor)
 
     def stopDraggingSelectors(self, cursor):
@@ -674,24 +714,29 @@ class ColorSelector:
 
     def get(self):
         return Color(hsv_to_rgb(self.hue, self.saturation, self.value))
+
     def update(self):
         self.hue = self.hue_slider.get()
         self.saturation = self.saturation_slider.get()
         self.value = self.value_slider.get()
 
-        self.hue_slider.texture = TEXTURES.hue_gradient(self.rect.w, self.slider_height, s=self.saturation, v=self.value)
-        self.saturation_slider.texture = TEXTURES.saturation_gradient(self.rect.w, self.slider_height, h=self.hue, v=self.value)
-        self.value_slider.texture = TEXTURES.value_gradient(self.rect.w, self.slider_height, h=self.hue, s=self.saturation)
+        self.hue_slider.texture = TEXTURES.hue_gradient(self.rect.w, self.slider_height, s=self.saturation,
+                                                        v=self.value)
+        self.saturation_slider.texture = TEXTURES.saturation_gradient(self.rect.w, self.slider_height, h=self.hue,
+                                                                      v=self.value)
+        self.value_slider.texture = TEXTURES.value_gradient(self.rect.w, self.slider_height, h=self.hue,
+                                                            s=self.saturation)
 
         self.surf.fill(self.surf.get_colorkey())
-        self.mask = pg.mask.from_surface(self.surf)
+
     def draw(self, display):
         self.update()
         for slider in self.sliders:
-            slider.update(cursor)
-            slider.draw(self.surf)
-            display.blit(slider.surf, slider.rect)
+            slider.draw(self.surf, cursor, self.rect.topleft)
         display.blit(self.surf, self.rect)
+        self.mask = pg.mask.from_surface(self.surf)
+
+
 """
 # Hue slider
 hue_slider = Slider(0, 360, (1070, 50, 200, 25), TEXTURES.hue_gradient(200, 25, s=100, v=100), Color(64, 64, 64), (20, 20))
@@ -704,11 +749,13 @@ sat_slider.rect.x -= sat_slider.pick_rect.w
 val_slider = Slider(0, 100, (1070, 120, 200, 25), TEXTURES.value_gradient(200, 25, h=0, s=100), Color(64, 64, 64), (20, 20))
 val_slider.rect.x -= val_slider.pick_rect.w
 """
+
+
 class Cursor:
     def __init__(self):
         self.visible: bool = True
-        self.rect: Rect = None
-        self.mask: Mask = None
+        self.rect: Rect = Rect(*mouse.get_pos(), 1, 1)
+        self.mask: Mask = pg.mask.from_surface(Surface(self.rect.size))
         self.color: Color = COLORS.GREEN
         self.surf: Surface = Surface((6, 6))
         self.surf.set_colorkey(Color(1, 1, 1))
@@ -717,18 +764,21 @@ class Cursor:
     def hide(self):
         self.visible = False
         return self
+
     def show(self):
         self.visible = True
         return self
+
     def update(self):
         self.surf.fill(self.surf.get_colorkey())
         pg.draw.rect(self.surf, self.color, ((2, 0), (2, 6)))
         pg.draw.rect(self.surf, self.color, ((0, 2), (6, 2)))
-        self.mask = pg.mask.from_surface(self.surf)
+        self.rect.topleft = mouse.get_pos()
         return self
+
     def draw(self, display):
+        self.rect.topleft = mouse.get_pos()
         if self.visible:
-            self.rect = self.surf.get_rect(center=(mouse.rect.topleft))
             display.blit(self.surf, self.rect)
         return self
 
@@ -746,11 +796,11 @@ class ClickTextButton():
         self.text_surf = font.render(text, True, Color(text_color))
         self.text_rect = self.text_surf.get_rect(center=Vec2(self.rect.size) / 2)
 
-    def get_mouse_hovering(self):
-        return masks_collide(self, mouse)
+    def get_cursor_hovering(self, cursor, offet=(0, 0)):
+        return masks_collide(self, cursor, offset)
 
     def update(self):
-        if self.get_mouse_hovering():
+        if self.get_cursor_hovering():
             bg_color = self.bg_color - Color(50, 50, 50)
         else:
             bg_color = self.bg_color
@@ -798,17 +848,18 @@ class PauseScreen:
         else:
             GLOBALS.PAUSED = False
 
-    def input(self):
+    def check_input_for_buttons(self):
         global run
-        if self.buttons['res'].get_mouse_hovering():
+        if self.buttons['res'].get_cursor_hovering():
             GLOBALS.PAUSED = False
-        if self.buttons['clear'].get_mouse_hovering():
+        if self.buttons['clear'].get_cursor_hovering():
             shapes_group.empty()
             GLOBALS.PAUSED = False
-        if self.buttons['exit'].get_mouse_hovering():
+        if self.buttons['exit'].get_cursor_hovering():
             run = False
 
-colorselector = ColorSelector((700, 100, 200, None), 20, 10, (16, 16))
+
+colorselector = ColorSelector((WINDOW.w - 200 - 25, 25, 200, None), 20, 10, (16, 16))
 fps_counter = FpsCounter(COLORS.WHITE, 22)
 grid = Grid(GLOBALS.GRID_SIZE, GLOBALS.GRID_SIZE)
 cursor = Cursor()
@@ -816,13 +867,10 @@ hotbar = Hotbar(7, (50, 50), 5, Color(70, 70, 70), Color(40, 40, 40), 3)
 pause_screen = PauseScreen()
 
 shapes_group = pg.sprite.Group()
-ui_group = [hotbar]
-
-GLOBALS.PAUSED = False
+ui_group = [hotbar, colorselector]
 
 run = True
 while run:
-    mouse.rect.topleft = mouse.pos = mouse.get_pos()
     SCREEN.fill(COLORS.BLACK)
     ####################################################################################################################
     #         POLL FOR EVENTS        #
@@ -831,6 +879,7 @@ while run:
     for e in pg.event.get():
         if e.type == pg.QUIT:
             run = False
+            raise Exception("pygame.QUIT event")
         #######################################################
         #   KEYBOARD   #
         #######################################################
@@ -853,7 +902,7 @@ while run:
         if e.type == pg.MOUSEBUTTONDOWN:
             if e.button == 1:
                 if not GLOBALS.PAUSED:
-                    if not any(masks_collide(mouse, object) for object in
+                    if not any(masks_collide(cursor, object) for object in
                                ui_group):
                         startShape()
 
@@ -862,10 +911,10 @@ while run:
                     hotbar.changeAction(e)
 
                 if GLOBALS.PAUSED:
-                    pause_screen.input()
+                    pause_screen.check_input_for_buttons()
             if e.button == 3:
                 if not GLOBALS.PAUSED:
-                    cancelShape()
+                    cancelNewShape()
         #######################################################
         if e.type == pg.MOUSEBUTTONUP:
             if e.button == 1:
@@ -876,32 +925,22 @@ while run:
         # SCROLL WHEEL #
         #######################################################
         if e.type == pg.MOUSEWHEEL:
-            scroll_through_action_types(e)
+            hotbar.changeAction(e)
 
     ####################################################################################################################
     #        RENDER GAME HERE        #
     ####################################################################################################################
     for shape in shapes_group:
         shape.draw(SCREEN)
-        if shape.mask.overlap(mouse.mask, (mouse.rect.x - shape.rect.x, mouse.rect.y - shape.rect.y)):
+        if masks_collide(cursor, shape):
             cursor.color = (COLORS.GREEN)
         else:
             cursor.color = (COLORS.GREEN)
 
     if not GLOBALS.PAUSED:
         grid.draw(SCREEN)
-        if TSD.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
-            TSD.COLOR = Color(219, 55, 172)
-            if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
-                if TSD.ACTION_TYPE == ACTION_TYPES.TRIANGLE:
-                    TSD.SHIFT_RATIO = 4 / 3
-                elif TSD.ACTION_TYPE == ACTION_TYPES.PENTAGON or TSD.ACTION_TYPE == ACTION_TYPES.STAR:
-                    TSD.SHIFT_RATIO = 0.951056516295 / 0.904508497185
-                else:
-                    TSD.SHIFT_RATIO = 1 / 1
-                drawShape(GLOBALS.GRID_SIZE, TSD.SHIFT_RATIO)
-            elif TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
-                drawShape()
+
+        applyRatioAndDrawShape()
 
         for object in ui_group:
             object.draw(SCREEN)
