@@ -79,8 +79,8 @@ class POLYGONS:
                 self.shape, self.ratio = self._TRIANGLE(), 4/3
             case ACTION_TYPES.REGULAR_PENTAGON:
                 self.shape, self.ratio = self._REGULAR_PENTAGON(), 0.951056516295 / 0.904508497185
-            case ACTION_TYPES.PENTAGRAM:
-                self.shape, self.ratio = self._PENTAGRAM(), 0.951056516295 / 0.904508497185
+            case ACTION_TYPES.STAR:
+                self.shape, self.ratio = self._STAR(), 0.951056516295 / 0.904508497185
             case ACTION_TYPES.REGULAR_HEXAGON:
                 self.shape, self.ratio = self._REGULAR_HEXAGON(), 1.1547005
             case _:
@@ -174,7 +174,7 @@ class POLYGONS:
             (1, 0.37918)
         ))
         return vertices
-    def _PENTAGRAM(self):
+    def _STAR(self):
         vertices = arr((
             (0.5, 0),
             (0.349342, 0.337536),
@@ -195,23 +195,35 @@ class POLYGONS:
         return vertices
 
 
-
-@dataclass
-class FONTS:
-    default = "bahnschrift"
-
-
-@dataclass
-class COLORS:
-    BLACK = Color("BLACK")
-    WHITE = Color("WHITE")
-    COLORKEY = Color(1, 1, 1)
-    RED = Color(255, 0, 0)
-    GREEN = Color(0, 255, 0)
-    BLUE = Color(0, 0, 255)
-    WHEN_DRAGGING = Color(219, 55, 172)
+fonts = {
+    'default': "bahnschrift"
+}
 
 
+DRAG_COLOR = Color(219, 55, 172)
+COLORKEY = Color(1, 1, 1)
+BLACK = Color('BLACK')
+WHITE = Color('WHITE')
+RED = Color('RED')
+GREEN = Color('GREEN')
+BLUE = Color('BLUE')
+
+action_types = {
+    'delete': 0,
+    'rectangle': 100,
+    'circle': 101,
+    'triangle': 102,
+    'regular_pentagon': 103,
+    'pentagram': 104,
+    'regular_hexagon': 105
+}
+shapes = []
+tools = []
+for type_id in action_types.values():
+    if type_id > 99:
+        shapes.append(type_id)
+    elif type_id < 100:
+        tools.append
 @dataclass
 class ACTION_TYPES:
     DELETE = 'DELETE'
@@ -219,9 +231,9 @@ class ACTION_TYPES:
     CIRCLE = 'CIRCLE'
     TRIANGLE = 'TRIANGLE'
     REGULAR_PENTAGON = 'REGULAR_PENTAGON'
-    PENTAGRAM = 'PENTAGRAM'
+    STAR = 'STAR'
     REGULAR_HEXAGON = 'REGULAR_HEXAGON'
-    SHAPES = [RECTANGLE, CIRCLE, TRIANGLE, REGULAR_PENTAGON, PENTAGRAM, REGULAR_HEXAGON]
+    SHAPES = [RECTANGLE, CIRCLE, TRIANGLE, REGULAR_PENTAGON, STAR, REGULAR_HEXAGON]
     ACTION_TYPES = [DELETE, *SHAPES]
 
 
@@ -255,7 +267,7 @@ class FpsCounter:
     def __init__(self, text_height, color):
         self.text = 'NULL'
         self.color = Color(color)
-        self.font = pg.font.SysFont(FONTS.default, text_height)
+        self.font = pg.font.SysFont(fonts['default'], text_height)
         self.surf = self.font.render(self.text, True, self.color)
 
     def draw(self, display):
@@ -267,7 +279,7 @@ class FpsCounter:
 class Grid():
     def __init__(self, step_x, step_y, color=Color(64, 64, 64), width=1):
         self.surf = Surface((WINDOW.w, WINDOW.h))
-        self.surf.set_colorkey(COLORS.COLORKEY)
+        self.surf.set_colorkey(COLORKEY)
         self.surf.fill(self.surf.get_colorkey())
         if step_x > 0:
             for x in range(0, WINDOW.w + 1, step_x):
@@ -363,7 +375,7 @@ def startShape():
     if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
         TSD.MOUSE_ACTION = MOUSE_STATES.DRAGGING
         TSD.START = arr(tuple(roundNumsToNearest(GLOBALS.cursor.rect.topleft, GLOBALS.GRID_SIZE)))
-        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, TSD.ACTION_TYPE).change_color(COLORS.WHEN_DRAGGING)
+        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, TSD.ACTION_TYPE).change_color(DRAG_COLOR)
         shapes_group.add(TSD.CURRENT_SHAPE)
     if TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
         TSD.MOUSE_ACTION = MOUSE_STATES.DRAGGING
@@ -472,7 +484,7 @@ class TextButton():
         self.rect = Rect(rect)
         self.surf = Surface(self.rect.size)
         self.surf.fill(self.bg_color)
-        font = pg.font.SysFont(FONTS.default, text_height)
+        font = pg.font.SysFont(fonts['default'], text_height)
         self.text_surf = font.render(text, True, Color('WHITE'))
         self.text_rect = self.text_surf.get_rect(center=Vec2(self.rect.size) / 2)
 
@@ -511,7 +523,7 @@ class Hotbar:
         for pos, action_type in zip(self.button_poses[len(self.buttons):num_buttons], ACTION_TYPES.SHAPES):
             self.buttons.append(
                 ShapeButton((pos, button_size), action_type, self.button_bg_color,
-                            self.button_bd_color, self.border_width, COLORS.BLUE,
+                            self.button_bd_color, self.border_width, BLUE,
                             0.6))
         self.changeAction()
         self.mask = pg.mask.from_surface(self.surf)
@@ -798,7 +810,7 @@ class Cursor:
         self.visible: bool = True
         self.rect: Rect = Rect(*mouse.get_pos(), 1, 1)
         self.mask: Mask = pg.mask.from_surface(Surface(self.rect.size))
-        self.color: Color = COLORS.GREEN
+        self.color: Color = GREEN
         self.surf: Surface = Surface((6, 6))
         self.surf.set_colorkey(Color(1, 1, 1))
         self.update()
@@ -834,7 +846,7 @@ class ClickTextButton():
         self.border_color = border_color
         self.mask = pg.mask.from_surface(self.surf)
         self.text_color = text_color
-        font = pg.font.SysFont(FONTS.default, text_height)
+        font = pg.font.SysFont(fonts['default'], text_height)
         self.text_surf = font.render(text, True, Color(text_color))
         self.text_rect = self.text_surf.get_rect(center=Vec2(self.rect.size) / 2)
 
@@ -924,7 +936,7 @@ colorselector = ColorSelector(x=WINDOW.w - 200 - 25,
                               )
 
 fps_counter = FpsCounter(text_height=22,
-                         color=COLORS.WHITE)
+                         color=WHITE)
 
 grid = Grid(GLOBALS.GRID_SIZE, GLOBALS.GRID_SIZE)
 
@@ -935,7 +947,7 @@ ui_group = [hotbar, colorselector]
 
 run = True
 while run:
-    SCREEN.fill(COLORS.BLACK)
+    SCREEN.fill(BLACK)
     ####################################################################################################################
     #         POLL FOR EVENTS        #
     ####################################################################################################################
@@ -998,9 +1010,9 @@ while run:
     for shape in shapes_group:
         shape.draw(SCREEN)
         if masks_collide(GLOBALS.cursor, shape):
-            GLOBALS.cursor.color = (COLORS.GREEN)
+            GLOBALS.cursor.color = (GREEN)
         else:
-            GLOBALS.cursor.color = (COLORS.GREEN)
+            GLOBALS.cursor.color = (GREEN)
 
     if not GLOBALS.PAUSED:
         grid.draw(SCREEN)
