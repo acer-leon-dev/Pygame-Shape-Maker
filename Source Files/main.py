@@ -1,5 +1,5 @@
 import pygame as pg
-from pygame import Color, Rect, Surface, Mask, Vector2 as Vec2, surfarray
+from pygame import Color, Rect, Surface, Mask, Vector2 as Vec2, surfarray, gfxdraw
 import numpy as np
 from numpy import array as arr
 from dataclasses import dataclass
@@ -27,6 +27,37 @@ CLOCK = pg.time.Clock()
 mouse = pg.mouse
 pg.mouse.set_visible(False)
 DT = 0
+
+fonts = {
+    'default': "bahnschrift"
+}
+
+DRAG_COLOR = Color(219, 55, 172)
+COLORKEY = Color(1, 1, 1)
+BLACK = Color('BLACK')
+WHITE = Color('WHITE')
+RED = Color('RED')
+GREEN = Color('GREEN')
+BLUE = Color('BLUE')
+
+actions = {
+    'delete': 0,
+    'rectangle': 100,
+    'circle': 101,
+    'triangle': 102,
+    'regular_pentagon': 103,
+    'pentagram': 104,
+    'regular_hexagon': 105
+}
+tools = []
+shapes = []
+for type_id in actions.values():
+    if type_id < 100:
+        tools.append(type_id)
+    elif type_id > 99:
+        shapes.append(type_id)
+list_types = shapes + tools
+
 
 
 def roundNumToNearest(value, round_to):
@@ -68,24 +99,23 @@ def masks_collide(object1, object2, offset=(0, 0)):
 ########################################################################################################################
 @dataclass
 class POLYGONS:
-    def __init__(self, action_type, size=None):
+    def __init__(self, action, size=None):
         self.size = arr(size)
-        match action_type:
-            case ACTION_TYPES.RECTANGLE:
-                self.shape, self.ratio = self._RECTANGLE(), 1/1
-            case ACTION_TYPES.CIRCLE:
-                self.shape, self.ratio = self._CIRCLE(), 1/1
-            case ACTION_TYPES.TRIANGLE:
-                self.shape, self.ratio = self._TRIANGLE(), 4/3
-            case ACTION_TYPES.REGULAR_PENTAGON:
-                self.shape, self.ratio = self._REGULAR_PENTAGON(), 0.951056516295 / 0.904508497185
-            case ACTION_TYPES.STAR:
-                self.shape, self.ratio = self._STAR(), 0.951056516295 / 0.904508497185
-            case ACTION_TYPES.REGULAR_HEXAGON:
-                self.shape, self.ratio = self._REGULAR_HEXAGON(), 1.1547005
-            case _:
-                self.shape = arr((0, 0) for _ in range(3))
-                self.ratio = 1
+        if action == actions['rectangle']:
+            self.shape, self.ratio = self._RECTANGLE(), 1
+        elif action == actions['circle']:
+            self.shape, self.ratio = self._CIRCLE(), 1
+        elif action == actions['triangle']:
+            self.shape, self.ratio = self._TRIANGLE(), 1.33333333333
+        elif action == actions['regular_pentagon']:
+            self.shape, self.ratio = self._REGULAR_PENTAGON(), 1.05146222424
+        elif action == actions['pentagram']:
+            self.shape, self.ratio = self._STAR(), 1.05146222424
+        elif action == actions['regular_hexagon']:
+            self.shape, self.ratio = self._REGULAR_HEXAGON(), 0.86602543256
+        else:
+            self.shape = arr((0, 0) for _ in range(3))
+            self.ratio = 1/1
         try:
             self.shape *= self.size
         except:
@@ -99,65 +129,365 @@ class POLYGONS:
     def _CIRCLE(self):
         vertices = arr((
             [1.0, 0.5],
+            [0.999923825263977, 0.508726179599762],
+            [0.9996954202651978, 0.5174497365951538],
+            [0.9993147850036621, 0.5261679887771606],
+            [0.9987820386886597, 0.5348782539367676],
+            [0.9980973601341248, 0.5435778498649597],
             [0.9972609281539917, 0.5522642135620117],
+            [0.9962730407714844, 0.5609346628189087],
+            [0.9951339960098267, 0.5695865750312805],
+            [0.9938441514968872, 0.5782172083854675],
+            [0.9924038648605347, 0.5868240594863892],
+            [0.9908136129379272, 0.5954045057296753],
             [0.9890738129615784, 0.603955864906311],
+            [0.987185001373291, 0.6124755144119263],
+            [0.9851478338241577, 0.6209609508514404],
+            [0.9829629063606262, 0.6294095516204834],
+            [0.9806308746337891, 0.6378186941146851],
+            [0.9781523942947388, 0.6461858749389648],
             [0.9755282402038574, 0.6545084714889526],
+            [0.9727592468261719, 0.6627840995788574],
+            [0.9698463082313538, 0.6710100769996643],
+            [0.9667901992797852, 0.6791839599609375],
+            [0.9635919332504272, 0.6873033046722412],
+            [0.9602524042129517, 0.6953655481338501],
             [0.9567726850509644, 0.7033683061599731],
+            [0.9531539082527161, 0.7113091349601746],
+            [0.9493970274925232, 0.7191855907440186],
+            [0.9455032348632812, 0.7269952297210693],
+            [0.9414737820625305, 0.7347357869148254],
+            [0.9373098611831665, 0.7424048185348511],
             [0.9330127239227295, 0.75],
+            [0.9285836219787598, 0.757519006729126],
+            [0.9240240454673767, 0.7649596333503723],
+            [0.9193352460861206, 0.7723195552825928],
+            [0.9145187735557556, 0.7795964479446411],
+            [0.9095760583877563, 0.7867882251739502],
             [0.9045084714889526, 0.7938926219940186],
+            [0.899317741394043, 0.8009074926376343],
+            [0.8940054178237915, 0.8078307509422302],
+            [0.8885729908943176, 0.8146601915359497],
+            [0.8830221891403198, 0.8213938474655151],
+            [0.8773548007011414, 0.8280295133590698],
             [0.8715723752975464, 0.834565281867981],
+            [0.8656768798828125, 0.840999186038971],
+            [0.8596699237823486, 0.8473291993141174],
+            [0.8535534143447876, 0.8535534143447876],
+            [0.8473291993141174, 0.8596699237823486],
+            [0.840999186038971, 0.8656768798828125],
             [0.834565281867981, 0.8715723752975464],
+            [0.8280295133590698, 0.8773548007011414],
+            [0.8213938474655151, 0.8830221891403198],
+            [0.8146601915359497, 0.8885729908943176],
+            [0.8078307509422302, 0.8940054178237915],
+            [0.8009074926376343, 0.899317741394043],
             [0.7938926219940186, 0.9045084714889526],
+            [0.7867882251739502, 0.9095760583877563],
+            [0.7795964479446411, 0.9145187735557556],
+            [0.7723195552825928, 0.9193352460861206],
+            [0.7649596333503723, 0.9240240454673767],
+            [0.757519006729126, 0.9285836219787598],
             [0.75, 0.9330127239227295],
+            [0.7424048185348511, 0.9373098611831665],
+            [0.7347357869148254, 0.9414737820625305],
+            [0.7269952297210693, 0.9455032348632812],
+            [0.7191855907440186, 0.9493970274925232],
+            [0.7113091349601746, 0.9531539082527161],
             [0.7033683061599731, 0.9567726850509644],
+            [0.6953655481338501, 0.9602524042129517],
+            [0.6873033046722412, 0.9635919332504272],
+            [0.6791839599609375, 0.9667901992797852],
+            [0.6710100769996643, 0.9698463082313538],
+            [0.6627840995788574, 0.9727592468261719],
             [0.6545084714889526, 0.9755282402038574],
+            [0.6461858749389648, 0.9781523942947388],
+            [0.6378186941146851, 0.9806308746337891],
+            [0.6294095516204834, 0.9829629063606262],
+            [0.6209609508514404, 0.9851478338241577],
+            [0.6124755144119263, 0.987185001373291],
             [0.603955864906311, 0.9890738129615784],
+            [0.5954045057296753, 0.9908136129379272],
+            [0.5868240594863892, 0.9924038648605347],
+            [0.5782172083854675, 0.9938441514968872],
+            [0.5695865750312805, 0.9951339960098267],
+            [0.5609346628189087, 0.9962730407714844],
             [0.5522642135620117, 0.9972609281539917],
+            [0.5435778498649597, 0.9980973601341248],
+            [0.5348782539367676, 0.9987820386886597],
+            [0.5261679887771606, 0.9993147850036621],
+            [0.5174497365951538, 0.9996954202651978],
+            [0.508726179599762, 0.999923825263977],
             [0.5, 1.0],
+            [0.49127379059791565, 0.999923825263977],
+            [0.4825502634048462, 0.9996954202651978],
+            [0.47383201122283936, 0.9993147850036621],
+            [0.4651217758655548, 0.9987820386886597],
+            [0.4564221203327179, 0.9980973601341248],
             [0.4477357566356659, 0.9972609281539917],
+            [0.4390653371810913, 0.9962730407714844],
+            [0.43041345477104187, 0.9951339960098267],
+            [0.4217827618122101, 0.9938441514968872],
+            [0.41317591071128845, 0.9924038648605347],
+            [0.4045954942703247, 0.9908136129379272],
             [0.39604416489601135, 0.9890738129615784],
+            [0.38752448558807373, 0.987185001373291],
+            [0.37903904914855957, 0.9851478338241577],
+            [0.370590478181839, 0.9829629063606262],
+            [0.36218130588531494, 0.9806308746337891],
+            [0.35381415486335754, 0.9781523942947388],
             [0.345491498708725, 0.9755282402038574],
+            [0.3372159004211426, 0.9727592468261719],
+            [0.3289899230003357, 0.9698463082313538],
+            [0.3208160400390625, 0.9667901992797852],
+            [0.3126966953277588, 0.9635919332504272],
+            [0.3046344518661499, 0.9602524042129517],
             [0.29663169384002686, 0.9567726850509644],
+            [0.28869086503982544, 0.9531539082527161],
+            [0.28081440925598145, 0.9493970274925232],
+            [0.27300477027893066, 0.9455032348632812],
+            [0.26526421308517456, 0.9414737820625305],
+            [0.2575951814651489, 0.9373098611831665],
             [0.25, 0.9330127239227295],
+            [0.24248096346855164, 0.9285836219787598],
+            [0.23504036664962769, 0.9240240454673767],
+            [0.22768047451972961, 0.9193352460861206],
+            [0.2204035520553589, 0.9145187735557556],
+            [0.2132117748260498, 0.9095760583877563],
             [0.20610737800598145, 0.9045084714889526],
+            [0.19909247756004333, 0.899317741394043],
+            [0.19216924905776978, 0.8940054178237915],
+            [0.1853398084640503, 0.8885729908943176],
+            [0.17860618233680725, 0.8830221891403198],
+            [0.17197048664093018, 0.8773548007011414],
             [0.16543468832969666, 0.8715723752975464],
+            [0.15900081396102905, 0.8656768798828125],
+            [0.15267080068588257, 0.8596699237823486],
+            [0.1464466154575348, 0.8535534143447876],
+            [0.14033010601997375, 0.8473291993141174],
+            [0.1343231499195099, 0.840999186038971],
             [0.12842759490013123, 0.834565281867981],
+            [0.12264519929885864, 0.8280295133590698],
+            [0.11697778105735779, 0.8213938474655151],
+            [0.11142700910568237, 0.8146601915359497],
+            [0.10599461197853088, 0.8078307509422302],
+            [0.10068225860595703, 0.8009074926376343],
             [0.09549149870872498, 0.7938926219940186],
+            [0.09042397141456604, 0.7867882251739502],
+            [0.08548122644424438, 0.7795964479446411],
+            [0.080664724111557, 0.7723195552825928],
+            [0.07597595453262329, 0.7649596333503723],
+            [0.07141634821891785, 0.757519006729126],
             [0.0669873058795929, 0.75],
+            [0.0626901388168335, 0.7424048185348511],
+            [0.05852621793746948, 0.7347357869148254],
+            [0.05449673533439636, 0.7269952297210693],
+            [0.05060297250747681, 0.7191855907440186],
+            [0.046846091747283936, 0.7113091349601746],
             [0.04322728514671326, 0.7033683061599731],
+            [0.03974756598472595, 0.6953655481338501],
+            [0.036408066749572754, 0.6873033046722412],
+            [0.033209800720214844, 0.6791839599609375],
+            [0.03015369176864624, 0.6710100769996643],
+            [0.027240723371505737, 0.6627840995788574],
             [0.02447172999382019, 0.6545084714889526],
+            [0.021847635507583618, 0.6461858749389648],
+            [0.019369155168533325, 0.6378186941146851],
+            [0.01703709363937378, 0.6294095516204834],
+            [0.014852136373519897, 0.6209609508514404],
+            [0.012814968824386597, 0.6124755144119263],
             [0.01092618703842163, 0.603955864906311],
+            [0.009186416864395142, 0.5954045057296753],
+            [0.007596135139465332, 0.5868240594863892],
+            [0.006155818700790405, 0.5782172083854675],
+            [0.004865974187850952, 0.5695865750312805],
+            [0.0037269294261932373, 0.5609346628189087],
             [0.002739042043685913, 0.5522642135620117],
+            [0.0019026398658752441, 0.5435778498649597],
+            [0.001217961311340332, 0.5348782539367676],
+            [0.0006852447986602783, 0.5261679887771606],
+            [0.0003045797348022461, 0.5174497365951538],
+            [7.614493370056152e-05, 0.508726179599762],
             [0.0, 0.5],
+            [7.614493370056152e-05, 0.49127379059791565],
+            [0.0003045797348022461, 0.4825502634048462],
+            [0.0006852447986602783, 0.47383201122283936],
+            [0.001217961311340332, 0.4651217758655548],
+            [0.0019026398658752441, 0.4564221203327179],
             [0.002739042043685913, 0.4477357566356659],
+            [0.0037269294261932373, 0.4390653371810913],
+            [0.004865974187850952, 0.43041345477104187],
+            [0.006155818700790405, 0.4217827618122101],
+            [0.007596135139465332, 0.41317591071128845],
+            [0.009186416864395142, 0.4045954942703247],
             [0.01092618703842163, 0.39604416489601135],
+            [0.012814968824386597, 0.38752448558807373],
+            [0.014852136373519897, 0.37903904914855957],
+            [0.01703709363937378, 0.370590478181839],
+            [0.019369155168533325, 0.36218130588531494],
+            [0.021847635507583618, 0.35381415486335754],
             [0.02447172999382019, 0.345491498708725],
+            [0.027240723371505737, 0.3372159004211426],
+            [0.03015369176864624, 0.3289899230003357],
+            [0.033209800720214844, 0.3208160400390625],
+            [0.036408066749572754, 0.3126966953277588],
+            [0.03974756598472595, 0.3046344518661499],
             [0.04322728514671326, 0.29663169384002686],
+            [0.046846091747283936, 0.28869086503982544],
+            [0.05060297250747681, 0.28081440925598145],
+            [0.05449673533439636, 0.27300477027893066],
+            [0.05852621793746948, 0.26526421308517456],
+            [0.0626901388168335, 0.2575951814651489],
             [0.0669873058795929, 0.25],
+            [0.07141634821891785, 0.24248096346855164],
+            [0.07597595453262329, 0.23504036664962769],
+            [0.080664724111557, 0.22768047451972961],
+            [0.08548122644424438, 0.2204035520553589],
+            [0.09042397141456604, 0.2132117748260498],
             [0.09549149870872498, 0.20610737800598145],
+            [0.10068225860595703, 0.19909247756004333],
+            [0.10599461197853088, 0.19216924905776978],
+            [0.11142700910568237, 0.1853398084640503],
+            [0.11697778105735779, 0.17860618233680725],
+            [0.12264519929885864, 0.17197048664093018],
             [0.12842759490013123, 0.16543468832969666],
+            [0.1343231499195099, 0.15900081396102905],
+            [0.14033010601997375, 0.15267080068588257],
+            [0.1464466154575348, 0.1464466154575348],
+            [0.15267080068588257, 0.14033010601997375],
+            [0.15900081396102905, 0.1343231499195099],
             [0.16543468832969666, 0.12842759490013123],
+            [0.17197048664093018, 0.12264519929885864],
+            [0.17860618233680725, 0.11697778105735779],
+            [0.1853398084640503, 0.11142700910568237],
+            [0.19216924905776978, 0.10599461197853088],
+            [0.19909247756004333, 0.10068225860595703],
             [0.20610737800598145, 0.09549149870872498],
+            [0.2132117748260498, 0.09042397141456604],
+            [0.2204035520553589, 0.08548122644424438],
+            [0.22768047451972961, 0.080664724111557],
+            [0.23504036664962769, 0.07597595453262329],
+            [0.24248096346855164, 0.07141634821891785],
             [0.25, 0.0669873058795929],
+            [0.2575951814651489, 0.0626901388168335],
+            [0.26526421308517456, 0.05852621793746948],
+            [0.27300477027893066, 0.05449673533439636],
+            [0.28081440925598145, 0.05060297250747681],
+            [0.28869086503982544, 0.046846091747283936],
             [0.29663169384002686, 0.04322728514671326],
+            [0.3046344518661499, 0.03974756598472595],
+            [0.3126966953277588, 0.036408066749572754],
+            [0.3208160400390625, 0.033209800720214844],
+            [0.3289899230003357, 0.03015369176864624],
+            [0.3372159004211426, 0.027240723371505737],
             [0.345491498708725, 0.02447172999382019],
+            [0.35381415486335754, 0.021847635507583618],
+            [0.36218130588531494, 0.019369155168533325],
+            [0.370590478181839, 0.01703709363937378],
+            [0.37903904914855957, 0.014852136373519897],
+            [0.38752448558807373, 0.012814968824386597],
             [0.39604416489601135, 0.01092618703842163],
+            [0.4045954942703247, 0.009186416864395142],
+            [0.41317591071128845, 0.007596135139465332],
+            [0.4217827618122101, 0.006155818700790405],
+            [0.43041345477104187, 0.004865974187850952],
+            [0.4390653371810913, 0.0037269294261932373],
             [0.4477357566356659, 0.002739042043685913],
+            [0.4564221203327179, 0.0019026398658752441],
+            [0.4651217758655548, 0.001217961311340332],
+            [0.47383201122283936, 0.0006852447986602783],
+            [0.4825502634048462, 0.0003045797348022461],
+            [0.49127379059791565, 7.614493370056152e-05],
             [0.5, 0.0],
+            [0.508726179599762, 7.614493370056152e-05],
+            [0.5174497365951538, 0.0003045797348022461],
+            [0.5261679887771606, 0.0006852447986602783],
+            [0.5348782539367676, 0.001217961311340332],
+            [0.5435778498649597, 0.0019026398658752441],
             [0.5522642135620117, 0.002739042043685913],
+            [0.5609346628189087, 0.0037269294261932373],
+            [0.5695865750312805, 0.004865974187850952],
+            [0.5782172083854675, 0.006155818700790405],
+            [0.5868240594863892, 0.007596135139465332],
+            [0.5954045057296753, 0.009186416864395142],
             [0.603955864906311, 0.01092618703842163],
+            [0.6124755144119263, 0.012814968824386597],
+            [0.6209609508514404, 0.014852136373519897],
+            [0.6294095516204834, 0.01703709363937378],
+            [0.6378186941146851, 0.019369155168533325],
+            [0.6461858749389648, 0.021847635507583618],
             [0.6545084714889526, 0.02447172999382019],
+            [0.6627840995788574, 0.027240723371505737],
+            [0.6710100769996643, 0.03015369176864624],
+            [0.6791839599609375, 0.033209800720214844],
+            [0.6873033046722412, 0.036408066749572754],
+            [0.6953655481338501, 0.03974756598472595],
             [0.7033683061599731, 0.04322728514671326],
+            [0.7113091349601746, 0.046846091747283936],
+            [0.7191855907440186, 0.05060297250747681],
+            [0.7269952297210693, 0.05449673533439636],
+            [0.7347357869148254, 0.05852621793746948],
+            [0.7424048185348511, 0.0626901388168335],
             [0.75, 0.0669873058795929],
+            [0.757519006729126, 0.07141634821891785],
+            [0.7649596333503723, 0.07597595453262329],
+            [0.7723195552825928, 0.080664724111557],
+            [0.7795964479446411, 0.08548122644424438],
+            [0.7867882251739502, 0.09042397141456604],
             [0.7938926219940186, 0.09549149870872498],
+            [0.8009074926376343, 0.10068225860595703],
+            [0.8078307509422302, 0.10599461197853088],
+            [0.8146601915359497, 0.11142700910568237],
+            [0.8213938474655151, 0.11697778105735779],
+            [0.8280295133590698, 0.12264519929885864],
             [0.834565281867981, 0.12842759490013123],
+            [0.840999186038971, 0.1343231499195099],
+            [0.8473291993141174, 0.14033010601997375],
+            [0.8535534143447876, 0.1464466154575348],
+            [0.8596699237823486, 0.15267080068588257],
+            [0.8656768798828125, 0.15900081396102905],
             [0.8715723752975464, 0.16543468832969666],
+            [0.8773548007011414, 0.17197048664093018],
+            [0.8830221891403198, 0.17860618233680725],
+            [0.8885729908943176, 0.1853398084640503],
+            [0.8940054178237915, 0.19216924905776978],
+            [0.899317741394043, 0.19909247756004333],
             [0.9045084714889526, 0.20610737800598145],
+            [0.9095760583877563, 0.2132117748260498],
+            [0.9145187735557556, 0.2204035520553589],
+            [0.9193352460861206, 0.22768047451972961],
+            [0.9240240454673767, 0.23504036664962769],
+            [0.9285836219787598, 0.24248096346855164],
             [0.9330127239227295, 0.25],
+            [0.9373098611831665, 0.2575951814651489],
+            [0.9414737820625305, 0.26526421308517456],
+            [0.9455032348632812, 0.27300477027893066],
+            [0.9493970274925232, 0.28081440925598145],
+            [0.9531539082527161, 0.28869086503982544],
             [0.9567726850509644, 0.29663169384002686],
+            [0.9602524042129517, 0.3046344518661499],
+            [0.9635919332504272, 0.3126966953277588],
+            [0.9667901992797852, 0.3208160400390625],
+            [0.9698463082313538, 0.3289899230003357],
+            [0.9727592468261719, 0.3372159004211426],
             [0.9755282402038574, 0.345491498708725],
+            [0.9781523942947388, 0.35381415486335754],
+            [0.9806308746337891, 0.36218130588531494],
+            [0.9829629063606262, 0.370590478181839],
+            [0.9851478338241577, 0.37903904914855957],
+            [0.987185001373291, 0.38752448558807373],
             [0.9890738129615784, 0.39604416489601135],
+            [0.9908136129379272, 0.4045954942703247],
+            [0.9924038648605347, 0.41317591071128845],
+            [0.9938441514968872, 0.4217827618122101],
+            [0.9951339960098267, 0.43041345477104187],
+            [0.9962730407714844, 0.4390653371810913],
             [0.9972609281539917, 0.4477357566356659],
+            [0.9980973601341248, 0.4564221203327179],
+            [0.9987820386886597, 0.4651217758655548],
+            [0.9993147850036621, 0.47383201122283936],
+            [0.9996954202651978, 0.4825502634048462],
+            [0.999923825263977, 0.49127379059791565],
         ))
 
         return vertices
@@ -195,46 +525,7 @@ class POLYGONS:
         return vertices
 
 
-fonts = {
-    'default': "bahnschrift"
-}
 
-
-DRAG_COLOR = Color(219, 55, 172)
-COLORKEY = Color(1, 1, 1)
-BLACK = Color('BLACK')
-WHITE = Color('WHITE')
-RED = Color('RED')
-GREEN = Color('GREEN')
-BLUE = Color('BLUE')
-
-action_types = {
-    'delete': 0,
-    'rectangle': 100,
-    'circle': 101,
-    'triangle': 102,
-    'regular_pentagon': 103,
-    'pentagram': 104,
-    'regular_hexagon': 105
-}
-shapes = []
-tools = []
-for type_id in action_types.values():
-    if type_id > 99:
-        shapes.append(type_id)
-    elif type_id < 100:
-        tools.append
-@dataclass
-class ACTION_TYPES:
-    DELETE = 'DELETE'
-    RECTANGLE = 'RECTANGLE'
-    CIRCLE = 'CIRCLE'
-    TRIANGLE = 'TRIANGLE'
-    REGULAR_PENTAGON = 'REGULAR_PENTAGON'
-    STAR = 'STAR'
-    REGULAR_HEXAGON = 'REGULAR_HEXAGON'
-    SHAPES = [RECTANGLE, CIRCLE, TRIANGLE, REGULAR_PENTAGON, STAR, REGULAR_HEXAGON]
-    ACTION_TYPES = [DELETE, *SHAPES]
 
 
 @dataclass
@@ -256,7 +547,7 @@ class TSD:  # Temporary Shape Data
     WIDTH = 0
     HEIGHT = 0
     SIZE = (0, 0)
-    ACTION_TYPE = ACTION_TYPES.RECTANGLE
+    action = actions['triangle']
     MOUSE_ACTION = MOUSE_STATES.IDLE
 
 
@@ -307,11 +598,13 @@ class Shape(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.mask = pg.mask.from_surface(self.image)
 
-        self.resize_data(False, False)
-
     def draw(self, display):
         display.blit(self.image, self.rect)
+        self.mask = pg.mask.from_surface(self.image)
         return self
+
+    def mouse_hovers(self):
+        return masks_collide(self, GLOBALS.cursor)
 
     def change_color(self, color):
         self.color = color
@@ -320,7 +613,8 @@ class Shape(pg.sprite.Sprite):
     def resize_data(self, flip_x, flip_y):
         self.image = pg.transform.scale(self.image, self.rect.size)
         self.image.fill(self.image.get_colorkey())
-        pg.draw.polygon(self.image, self.color, POLYGONS(TSD.ACTION_TYPE, self.rect.size).shape)
+        pg.gfxdraw.filled_polygon(self.image, POLYGONS(TSD.action, self.rect.size).shape, self.color)
+
         if flip_x and flip_y:
             self.rect = self.image.get_rect(bottomright=self.rect.topleft)
         elif flip_x:
@@ -331,7 +625,6 @@ class Shape(pg.sprite.Sprite):
             self.rect = self.image.get_rect(topleft=self.rect.topleft)
 
         self.image = pg.transform.flip(self.image, flip_x, flip_y)
-        self.mask = pg.mask.from_surface(self.image)
         return self
 
 
@@ -372,18 +665,18 @@ class DeleteBox(pg.sprite.Sprite):
 
 
 def startShape():
-    if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
+    if any(TSD.action == action for action in shapes):
         TSD.MOUSE_ACTION = MOUSE_STATES.DRAGGING
         TSD.START = arr(tuple(roundNumsToNearest(GLOBALS.cursor.rect.topleft, GLOBALS.GRID_SIZE)))
-        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, TSD.ACTION_TYPE).change_color(DRAG_COLOR)
+        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, TSD.action).change_color(DRAG_COLOR)
         shapes_group.add(TSD.CURRENT_SHAPE)
-    if TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
+    if TSD.action == actions['delete']:
         TSD.MOUSE_ACTION = MOUSE_STATES.DRAGGING
         TSD.START = arr(tuple(GLOBALS.cursor.rect.topleft))
         TSD.CURRENT_SHAPE = DeleteBox(TSD.START, TSD.SIZE)
         shapes_group.add(TSD.CURRENT_SHAPE)
 
-def drawShape(step_size=0, shift_ratio=1/1):
+def drawShape(step_size=0):
     TSD.CURRENT_SHAPE.rect.topleft = TSD.START
     TSD.END = arr(tuple(roundNumsToNearest(GLOBALS.cursor.rect.topleft, step_size)))
     TSD.WIDTH = (TSD.END[0] - TSD.START[0])
@@ -393,11 +686,10 @@ def drawShape(step_size=0, shift_ratio=1/1):
             TSD.SIZE = arr((TSD.HEIGHT, TSD.HEIGHT))
         else:
             TSD.SIZE = arr((TSD.WIDTH, TSD.WIDTH))
+        np.abs(TSD.SIZE, TSD.SIZE)
+        TSD.SIZE[0] *= POLYGONS(TSD.action).ratio
     else:
         TSD.SIZE = np.absolute(arr([TSD.WIDTH, TSD.HEIGHT]))
-        TSD.SIZE[0] *= shift_ratio
-        np.abs(TSD.SIZE, TSD.SIZE)
-
     TSD.CURRENT_SHAPE.rect.size = TSD.SIZE
     if TSD.WIDTH < 0 and TSD.HEIGHT < 0:
         TSD.CURRENT_SHAPE.resize_data(True, True)
@@ -411,10 +703,10 @@ def drawShape(step_size=0, shift_ratio=1/1):
 
 def endShape(color):
     if TSD.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
-        if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
+        if any(TSD.action == action for action in shapes):
             TSD.CURRENT_SHAPE.color = color
-            drawShape(GLOBALS.GRID_SIZE, POLYGONS((0,0), TSD.CURRENT_SHAPE).ratio)
-        if TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
+            drawShape(GLOBALS.GRID_SIZE)
+        if TSD.action == actions['delete']:
             for shape in shapes_group:
                 if shape != TSD.CURRENT_SHAPE:
                     if masks_collide(shape, TSD.CURRENT_SHAPE) or masks_collide(shape, GLOBALS.cursor):
@@ -434,35 +726,39 @@ def cancelNewShape():
 
 def applyRatioAndDrawShape():
     if TSD.MOUSE_ACTION == MOUSE_STATES.DRAGGING:
-        if any(TSD.ACTION_TYPE == action_type for action_type in ACTION_TYPES.SHAPES):
-            drawShape(GLOBALS.GRID_SIZE, POLYGONS(TSD.CURRENT_SHAPE).ratio)
-        elif TSD.ACTION_TYPE == ACTION_TYPES.DELETE:
+        if any(TSD.action == action for action in shapes):
+            drawShape(GLOBALS.GRID_SIZE)
+        elif TSD.action == actions['delete']:
             drawShape()
 
 
 class ShapeButton():
-    def __init__(self, rect, action_type, bg_color, border_color, border_width, shape_color, shape_scale, ):
+    def __init__(self, rect, action, bg_color, border_color, border_thickness, shape_color, shape_scale, ):
         self.rect = Rect(rect)
         self.surf = Surface(self.rect.size)
         self.bg_color = bg_color
         self.surf.fill(self.bg_color)
-        self.border_color = border_color
-        self.border_width = border_width
-        self.shape_color = shape_color
 
-        self.action_type = action_type
+        self.border_color = border_color
+        self.border_thickness = border_thickness
+
+        self.action = action
+        self.shape_color = shape_color
         self.shape_scale = shape_scale
         self.shape_image = pg.transform.scale_by(self.surf, self.shape_scale)
         self.shape_image.set_colorkey((1, 1, 1));
         self.shape_image.fill(self.shape_image.get_colorkey())
         self.shape_rect = self.shape_image.get_rect(center=Vec2(self.rect.size) / 2)
-        self.polygons = POLYGONS(self.action_type, Vec2(self.rect.size) * self.shape_scale)
+        self.shape_info = POLYGONS(self.action, Vec2(self.rect.size) * self.shape_scale)
         self.create_shape()
+
 
         self.mask = pg.mask.from_surface(self.surf)
 
     def create_shape(self):
-        pg.draw.polygon(self.shape_image, self.shape_color, (self.polygons.shape))
+        pg.draw.polygon(self.shape_image, self.shape_color,
+                        (self.shape_info.shape) * arr([1 - self.border_thickness * 2 / self.rect.w,
+                                                1 - self.border_thickness * 2 / self.rect.h]) + self.border_thickness)
         return self
 
     def mouse_hovers(self, offset=(0, 0)):
@@ -470,24 +766,27 @@ class ShapeButton():
 
     def draw(self, display, special_flags=0):
         self.surf.blit(self.shape_image, self.shape_rect)
-        pg.draw.rect(self.surf, self.border_color, self.surf.get_rect(), width=self.border_width)
+        pg.draw.rect(self.surf, self.border_color, self.surf.get_rect(), width=self.border_thickness)
         display.blit(self.surf, self.rect, special_flags=special_flags)
         return self
 
 
 class TextButton():
-    def __init__(self, rect, action_type, text, text_height, bg_color, border_color, border_width):
-        self.action_type = action_type
+    def __init__(self, rect, action, text, text_height, bg_color, border_color, border_thickness):
+        self.action = action
         self.bg_color = bg_color
-        self.border_color = border_color
-        self.border_width = border_width
         self.rect = Rect(rect)
         self.surf = Surface(self.rect.size)
         self.surf.fill(self.bg_color)
+
         font = pg.font.SysFont(fonts['default'], text_height)
         self.text_surf = font.render(text, True, Color('WHITE'))
         self.text_rect = self.text_surf.get_rect(center=Vec2(self.rect.size) / 2)
 
+        self.border_color = border_color
+        self.border_thickness = border_thickness
+
+        self.rect = self.rect.inflate(self.border_thickness * 2, self.border_thickness * 2)
         self.mask = pg.mask.from_surface(self.surf)
 
     def mouse_hovers(self, offset=(0, 0)):
@@ -495,16 +794,16 @@ class TextButton():
 
     def draw(self, display):
         self.surf.blit(self.text_surf, self.text_rect)
-        pg.draw.rect(self.surf, self.border_color, self.surf.get_rect(), width=self.border_width)
+        pg.draw.rect(self.surf, self.border_color, self.rect, width=self.border_thickness)
         display.blit(self.surf, self.rect)
         return self
 
 
 class Hotbar:
-    def __init__(self, x, y, button_size, padding, background_color, border_color, border_width):
+    def __init__(self, x, y, button_size, padding, background_color, border_color, border_thickness, icon_scale):
         self.button_bg_color = Color(background_color)
         self.button_bd_color = Color(border_color)
-        self.border_width = border_width
+        self.border_thickness = border_thickness
 
         num_buttons = 7
         self.surf = Surface((num_buttons * button_size[0] + num_buttons * padding, button_size[1]))
@@ -516,15 +815,15 @@ class Hotbar:
                              enumerate(range(0, button_size[0] * num_buttons, button_size[0]))]
         self.buttons = []
 
-        for pos, (action_type, text) in zip([*self.button_poses[0:1]], {ACTION_TYPES.DELETE: 'DEL'}.items()):
+        for pos, (action, text) in zip([*self.button_poses[0:1]], {actions['delete']: 'DEL'}.items()):
             self.buttons.append(
-                TextButton((pos, button_size), action_type, text, 16,
-                           self.button_bg_color, self.button_bd_color, self.border_width))
-        for pos, action_type in zip(self.button_poses[len(self.buttons):num_buttons], ACTION_TYPES.SHAPES):
+                TextButton((pos, button_size), action, text, 16,
+                           self.button_bg_color, self.button_bd_color, self.border_thickness))
+        for pos, action in zip(self.button_poses[len(self.buttons):num_buttons], shapes):
             self.buttons.append(
-                ShapeButton((pos, button_size), action_type, self.button_bg_color,
-                            self.button_bd_color, self.border_width, BLUE,
-                            0.6))
+                ShapeButton((pos, button_size), action, self.button_bg_color,
+                            self.button_bd_color, self.border_thickness, WHITE,
+                            icon_scale))
         self.changeAction()
         self.mask = pg.mask.from_surface(self.surf)
 
@@ -539,39 +838,38 @@ class Hotbar:
                 case pg.KEYDOWN | pg.KEYUP:
                     match event.key:
                         case pg.K_1:
-                            TSD.ACTION_TYPE = self.buttons[0].action_type
+                            TSD.action = self.buttons[0].action
                         case pg.K_2:
-                            TSD.ACTION_TYPE = self.buttons[1].action_type
+                            TSD.action = self.buttons[1].action
                         case pg.K_3:
-                            TSD.ACTION_TYPE = self.buttons[2].action_type
+                            TSD.action = self.buttons[2].action
                         case pg.K_4:
-                            TSD.ACTION_TYPE = self.buttons[3].action_type
+                            TSD.action = self.buttons[3].action
                         case pg.K_5:
-                            TSD.ACTION_TYPE = self.buttons[4].action_type
+                            TSD.action = self.buttons[4].action
                         case pg.K_6:
-                            TSD.ACTION_TYPE = self.buttons[5].action_type
+                            TSD.action = self.buttons[5].action
                         case pg.K_7:
-                            TSD.ACTION_TYPE = self.buttons[6].action_type
+                            TSD.action = self.buttons[6].action
                 case pg.MOUSEBUTTONDOWN | pg.MOUSEBUTTONUP:
                     if not masks_collide(GLOBALS.cursor, self):
                         return
                     for button in self.buttons:
                         if not masks_collide(button, GLOBALS.cursor, (10, 10)):
                             continue
-                        TSD.ACTION_TYPE = button.action_type
+                        TSD.action = button.action
                         break
                 case pg.MOUSEWHEEL:
                     increment = 1 if e.precise_y < 0 else -1
-                    index = ACTION_TYPES.ACTION_TYPES.index(TSD.ACTION_TYPE) + increment
+                    index = list_types.index(TSD.action) + increment
                     try:
-                        TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[index]
+                        TSD.action = list_types[index]
                     except IndexError:
-                        TSD.ACTION_TYPE = ACTION_TYPES.ACTION_TYPES[0]
-        except:
+                        TSD.action = list_types[0]
+        except AttributeError:
             pass
-
         for button in self.buttons:
-            if not TSD.ACTION_TYPE == button.action_type:
+            if not TSD.action == button.action:
                 bg_color = button.bg_color
             else:
                 bg_color = button.bg_color + Color(30, 30, 60)
@@ -603,8 +901,9 @@ class Slider():
         self.pick.fill(self.pick.get_colorkey())
         self.pick_rect = self.pick.get_rect(center=(self.rect.w * self.fraction + pick_size[0] / 2, self.rect.h))
         self.pick_border_thickness = pick_border_thickness
-        pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(ACTION_TYPES.TRIANGLE, self.pick.get_size()).shape)
-        pg.draw.polygon(self.pick, self.PD.current['bg'], POLYGONS(ACTION_TYPES.TRIANGLE, self.pick.get_size()).shape + arr((0, -1)),
+        self.triangle_vertices = POLYGONS(actions['triangle'], self.pick_rect.size).shape
+        pg.draw.polygon(self.pick, self.PD.current['bg'], self.triangle_vertices)
+        pg.draw.polygon(self.pick, self.PD.current['bg'], self.triangle_vertices + arr((0, -1)),
                         width=self.pick_border_thickness)
 
         # Create bar
@@ -620,7 +919,7 @@ class Slider():
 
         self.rect = Rect((self.bar_rect.topleft),
                          (self.bar_rect.w + self.pick_rect.w,
-                          self.bar_rect.h + self.pick.get_height() / 3 + self.border_thickness))
+                          self.bar_rect.h + self.border_thickness/2 + self.pick.get_height() / 3))
         self.surf = Surface(self.rect.size)
         self.surf.set_colorkey(Color(1, 1, 1));
         self.surf.fill(self.surf.get_colorkey())
@@ -655,6 +954,10 @@ class Slider():
     def get(self):
         return self.value
 
+    def set(self, value):
+        self.value = value
+        return self
+
     def mouse_hovers(self, offset=(0, 0)):
         return masks_collide(self, GLOBALS.cursor, offset)
 
@@ -681,13 +984,13 @@ class Slider():
         self.value = self.fraction * (self.max - self.min) + self.min
 
         self.pick.fill(self.pick.get_colorkey())
-        pg.draw.polygon(self.pick, self.PD.current['bd'], POLYGONS(ACTION_TYPES.TRIANGLE, self.pick_rect.size).shape)
+        pg.draw.polygon(self.pick, self.PD.current['bd'], self.triangle_vertices)
         pick_border_ratio_width = (self.pick_rect.w - 2 * self.pick_border_thickness) / self.pick_rect.w
         pick_border_ratio_height = (self.pick_rect.h - 2 * self.pick_border_thickness) / self.pick_rect.h
-        pg.draw.polygon(self.pick, self.PD.current['bg'],
-                        POLYGONS(ACTION_TYPES.TRIANGLE, (arr(self.pick_rect.size) * arr(
-                            (pick_border_ratio_width, pick_border_ratio_height)))).shape +
-                        arr((self.pick_rect.w, self.pick_rect.h)) / 2 - arr((self.pick_rect.w, self.pick_rect.h)) *
+        pg.draw.polygon(self.pick, self.PD.current['bg'], # self.triangle
+                        self.triangle_vertices * arr((pick_border_ratio_width, pick_border_ratio_height)) +
+                        arr((self.pick_rect.w, self.pick_rect.h)) / 2 -
+                        arr((self.pick_rect.w, self.pick_rect.h)) *
                         arr((pick_border_ratio_width, pick_border_ratio_height)) / 2)
 
         self.bar.blit(pg.transform.scale(self.texture, self.bar_rect.size), (0, 0))
@@ -753,7 +1056,6 @@ class ColorSelector:
         self.mask = pg.mask.from_surface(self.surf)
 
     def draw(self, display):
-        self.update()
         for slider in self.sliders:
             slider.draw(self.surf, self.rect.topleft)
         display.blit(self.surf, self.rect)
@@ -773,6 +1075,16 @@ class ColorSelector:
     def get(self):
         return Color(hsv_to_rgb(self.hue, self.saturation, self.value))
 
+    def set(self, hue, saturation, value):
+        for slider in self.sliders:
+            if not self.slider.min < hue < self.slider.max:
+                raise Exception("ColorSelector.set() must be within slider range")
+
+        self.hue_slider.set(hue)
+        self.saturation_slider.set(saturation)
+        self.value_slider.set(value)
+        return self
+
     def update(self):
         self.hue = self.hue_slider.get()
         self.saturation = self.saturation_slider.get()
@@ -791,18 +1103,6 @@ class ColorSelector:
 
 
 
-"""
-# Hue slider
-hue_slider = Slider(0, 360, (1070, 50, 200, 25), TEXTURES.hue_gradient(200, 25, s=100, v=100), Color(64, 64, 64), (20, 20))
-hue_slider.rect.x -= hue_slider.pick_rect.w
-
-# Saturation slider
-sat_slider = Slider(0, 100, (1070, 85, 200, 25), TEXTURES.saturation_gradient(200, 25, h=0, v=100), Color(64, 64, 64), border_color(20, 20))
-sat_slider.rect.x -= sat_slider.pick_rect.w
-
-val_slider = Slider(0, 100, (1070, 120, 200, 25), TEXTURES.value_gradient(200, 25, h=0, s=100), Color(64, 64, 64), (20, 20))
-val_slider.rect.x -= val_slider.pick_rect.w
-"""
 
 
 class Cursor:
@@ -925,7 +1225,8 @@ hotbar = Hotbar(x=10, y=10,
                 padding=5,
                 background_color=Color(70, 70, 70),
                 border_color=Color(40, 40, 40),
-                border_width=3)
+                border_thickness=3,
+                icon_scale=1)
 
 colorselector = ColorSelector(x=WINDOW.w - 200 - 25,
                               y=15,
@@ -1002,17 +1303,21 @@ while run:
         # SCROLL WHEEL #
         #######################################################
         if e.type == pg.MOUSEWHEEL:
+            if
             hotbar.changeAction(e)
 
     ####################################################################################################################
     #        RENDER GAME HERE        #
     ####################################################################################################################
+
+    shapes_group.draw(SCREEN)
     for shape in shapes_group:
-        shape.draw(SCREEN)
         if masks_collide(GLOBALS.cursor, shape):
             GLOBALS.cursor.color = (GREEN)
         else:
             GLOBALS.cursor.color = (GREEN)
+
+    colorselector.draw(SCREEN)
 
     if not GLOBALS.PAUSED:
         grid.draw(SCREEN)
@@ -1021,8 +1326,7 @@ while run:
 
         for object in ui_group:
             object.draw(SCREEN)
-
-        colorselector.draw(SCREEN)
+        colorselector.update()
     elif GLOBALS.PAUSED:
         pause_screen.draw(SCREEN)
 
