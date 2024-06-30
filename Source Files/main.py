@@ -733,7 +733,7 @@ def applyRatioAndDrawShape():
 
 
 class ShapeButton():
-    def __init__(self, rect, action, bg_color, border_color, border_thickness, shape_color, shape_scale, ):
+    def __init__(self, rect, action, bg_color, border_color, border_thickness, shape_color, shape_scale):
         self.rect = Rect(rect)
         self.surf = Surface(self.rect.size)
         self.bg_color = bg_color
@@ -748,7 +748,7 @@ class ShapeButton():
         self.shape_image = pg.transform.scale_by(self.surf, self.shape_scale)
         self.shape_image.set_colorkey((COLORKEY));
         self.shape_image.fill(self.shape_image.get_colorkey())
-        self.shape_rect = self.shape_image.get_rect(center=Vec2(self.rect.size) / 2)
+        self.shape_rect = self.shape_image.get_rect(center=arr(self.rect.size) / 2)
         self.shape_info = POLYGONS(self.action, Vec2(self.rect.size) * self.shape_scale)
         self.create_shape()
 
@@ -791,7 +791,6 @@ class TextButton():
         self.border_color = border_color
         self.border_thickness = border_thickness
 
-        self.rect = self.rect.inflate(self.border_thickness * 2, self.border_thickness * 2)
         self.mask = pg.mask.from_surface(self.surf)
 
     def mouse_hovers(self, offset=(0, 0)):
