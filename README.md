@@ -3,6 +3,8 @@ Libraries used:
 - Pygame
 - Numpy
 
+## Install
+- Download "ShapeMaker.exe" and run
 ### Controls:
 - esc for menu
 - left-click and drag to place/delete shapes
