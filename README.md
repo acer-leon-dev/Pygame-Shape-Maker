@@ -4,7 +4,7 @@ Libraries used:
 - Numpy
 
 ## Install
-- Download "ShapeMaker.exe" and run
+- Download "ShapeMaker.exe" and run (May be broken)
 ### Controls:
 - esc for menu
 - left-click and drag to place/delete shapes
