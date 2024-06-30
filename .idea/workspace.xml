@@ -53,24 +53,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python..obj to array.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.obj to.executor": "Run",
-    "Python.quic.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "C:/Users/adote/PycharmProjects/Pygame Shape Maker",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python..obj to array.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.obj to.executor&quot;: &quot;Run&quot;,
+    &quot;Python.quic.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/adote/PycharmProjects/Pygame Shape Maker&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\adote\PycharmProjects\Pygame Shape Maker\Source Files\images\slider_backgrounds" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.main">
     <configuration name=".obj to array" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Pygame Shape Maker" />
       <option name="ENV_FILES" value="" />
@@ -118,8 +118,8 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python..obj to array" />
       <item itemvalue="Python.main" />
+      <item itemvalue="Python..obj to array" />
     </list>
     <recent_temporary>
       <list>
@@ -242,7 +242,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719675194535</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1719698377847</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1719698377847</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
