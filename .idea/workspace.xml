@@ -5,20 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Updated main.py">
-      <change afterPath="$PROJECT_DIR$/build/main/Analysis-00.toc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/EXE-00.toc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/PKG-00.toc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/PYZ-00.pyz" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/PYZ-00.toc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/base_library.zip" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/main.pkg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/warn-main.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build/main/xref-main.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.exe" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.spec" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/misc/icon.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/misc/icon.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/main/EXE-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/main/EXE-00.toc" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -306,7 +293,23 @@
       <option name="project" value="LOCAL" />
       <updated>1719740450782</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1719741704893</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1719741704893</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1719741761006</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1719741761006</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
