@@ -1297,7 +1297,6 @@ while run:
     for e in pg.event.get():
         if e.type == pg.QUIT:
             run = False
-            raise Exception("pygame.QUIT event")
         #######################################################
         #   KEYBOARD   #
         #######################################################
