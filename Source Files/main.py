@@ -40,7 +40,7 @@ GREEN = Color('GREEN')
 BLUE = Color('BLUE')
 
 actions = {
-    'delete': 0,
+    'delete': 1,
     'rectangle': 100,
     'circle': 101,
     'triangle': 102,
@@ -622,6 +622,7 @@ class Shape(pg.sprite.Sprite):
             self.rect = self.image.get_rect(topleft=self.rect.topleft)
 
         self.image = pg.transform.flip(self.image, flip_x, flip_y)
+        self.mask = pg.mask.from_surface(self.image)
         return self
 
 
@@ -635,7 +636,7 @@ class DeleteBox(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.mask = pg.mask.from_surface(self.image)
 
-        self.grid = Grid(20, 20, Color(32, 32, 32))
+        self.grid = Grid(20, 20, Color(255, 255, 255))
         self.resize_data(False, False)
 
     def resize_data(self, flip_x, flip_y):
@@ -652,7 +653,7 @@ class DeleteBox(pg.sprite.Sprite):
 
         self.image = pg.transform.flip(self.image, flip_x, flip_y)
         self.mask = pg.mask.from_surface(self.image)
-        self.grid.draw(self.image, special_flags=pg.BLEND_ADD)
+        self.grid.draw(self.image, special_flags=pg.BLEND_MIN)
         return self
 
     def draw(self, display):
@@ -707,6 +708,7 @@ def endShape(color):
                 if shape != TSD.CURRENT_SHAPE:
                     if masks_collide(shape, TSD.CURRENT_SHAPE) or masks_collide(shape, GLOBALS.cursor):
                         shapes_group.remove(shape)
+
             shapes_group.remove(TSD.CURRENT_SHAPE)
         TSD.MOUSE_ACTION = INPUT_STATES.IDLE
         TSD.START = TSD.END = TSD.SIZE = (0, 0)
@@ -1349,7 +1351,8 @@ while run:
     #        RENDER GAME HERE        #
     ####################################################################################################################
 
-    shapes_group.draw(SCREEN)
+    for shape in shapes_group:
+        shape.draw(SCREEN)
     for shape in shapes_group:
         if masks_collide(GLOBALS.cursor, shape):
             GLOBALS.cursor.color = (GREEN)
