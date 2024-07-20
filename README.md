@@ -6,10 +6,14 @@ Libraries used:
 ## Install
 - Download "ShapeMaker.exe" and run
 ### Controls:
-- esc for menu
-- left-click and drag to place/delete shapes
-- left-click + shift to make shape size equal
-- 1-7, scroll, or click on hotbar to change current shape
-- drag sliders to change color
-- shift + scroll to change color hue
-- r to clear canvas
+- Esc - Open menu
+- Left-click and drag - Place/delete shapes
+- Left-click + Shift - Make current drag regular/equilateral
+- Right-click while dragging - Cancel current drag
+- 1-7 keys, Scroll, or Left-click on hotbar - Change current tool/shape
+- Drag slider - Change current shape color
+- Shift + Scroll - Change current shape hue (shorthand for changing color)
+- R key - Clear canvas
+
+## Bugs
+- Unknown
