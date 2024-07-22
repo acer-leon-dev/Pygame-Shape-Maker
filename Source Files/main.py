@@ -4,6 +4,8 @@ import numpy as np
 from numpy import array as arr
 from dataclasses import dataclass
 import colorsys
+from tkinter import filedialog
+
 
 pg.init()
 
@@ -57,6 +59,14 @@ for type_id in actions.values():
         shapes.append(type_id)
 list_types = shapes + tools
 
+def save_surface_with_filedialog(surface):
+    filepath = filedialog.asksaveasfilename(
+        title="Save Canvas",
+        filetypes=[("PNG Files", "*.png"), ("JPEG Files", "*.jpeg"),
+                   ("BMP Files", "*.bmp"), ("TGA Files", "*.tga")],
+        defaultextension=".png"
+    )
+    pg.image.save(surface, filepath)
 
 def roundNumToNearest(value, round_to):
     value = round(value)
@@ -91,6 +101,18 @@ def masks_collide(object1, object2, offset=(0, 0)):
     return bool(object1.mask.overlap(object2.mask, (
         object2.rect.x - object1.rect.x - offset[0], object2.rect.y - object1.rect.y - offset[1])))
 
+def any_of(lefthand, *righthands) -> bool:
+    """
+    Compares the lefthand value to each righthand and returns if there are any matches
+
+    Parameters:
+      lefthand (Any): value to compare to each righthand.
+      righthands (Any): values to compare to the lefthand.
+
+    Returns:
+      bool: Whether or not the lefthand matches any of the righthands
+    """
+    return any(lefthand == s for s in righthands)
 
 ########################################################################################################################
 ###############  CONSTANTS   #################################################################################
@@ -660,17 +682,26 @@ class DeleteBox(pg.sprite.Sprite):
         display.blit(self.image, self.rect, special_flags=pg.BLEND_ADD)
 
 
+canvas = pg.Surface((WINDOW.w, WINDOW.h))
+
+def redraw_canvas():
+    canvas.fill("BLACK")
+    canvas_group.draw(canvas)
+
+def clear_canvas():
+    canvas_group.empty()
+    canvas.fill("BLACK")
+
+
 def startShape():
     if any(TSD.action == action for action in shapes):
         TSD.MOUSE_ACTION = INPUT_STATES.DRAGGING
         TSD.START = arr(tuple(roundNumsToNearest(GLOBALS.cursor.rect.topleft, GLOBALS.GRID_SIZE)))
         TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, TSD.action).change_color(DRAG_COLOR)
-        shapes_group.add(TSD.CURRENT_SHAPE)
     if TSD.action == actions['delete']:
         TSD.MOUSE_ACTION = INPUT_STATES.DRAGGING
         TSD.START = arr(tuple(GLOBALS.cursor.rect.topleft))
         TSD.CURRENT_SHAPE = DeleteBox(TSD.START, TSD.SIZE)
-        shapes_group.add(TSD.CURRENT_SHAPE)
 
 
 def drawShape(step_size=0):
@@ -702,24 +733,29 @@ def endShape(color):
     if TSD.MOUSE_ACTION == INPUT_STATES.DRAGGING:
         if any(TSD.action == action for action in shapes):
             TSD.CURRENT_SHAPE.color = color
+            canvas_group.add(TSD.CURRENT_SHAPE)
             drawShape(GLOBALS.GRID_SIZE)
         if TSD.action == actions['delete']:
-            for shape in shapes_group:
-                if shape != TSD.CURRENT_SHAPE:
-                    if masks_collide(shape, TSD.CURRENT_SHAPE) or masks_collide(shape, GLOBALS.cursor):
-                        shapes_group.remove(shape)
-
-            shapes_group.remove(TSD.CURRENT_SHAPE)
+            for shape in canvas_group:
+                print("eyfiwf0")
+                if masks_collide(shape, TSD.CURRENT_SHAPE) or masks_collide(shape, GLOBALS.cursor):
+                    canvas_group.remove(shape)
+                    print("shape removed from canvas group")
         TSD.MOUSE_ACTION = INPUT_STATES.IDLE
         TSD.START = TSD.END = TSD.SIZE = (0, 0)
         TSD.WIDTH = TSD.HEIGHT = 0
+    TSD.CURRENT_SHAPE = None
+    print("Drag Ended")
+    redraw_canvas()
 
 
 def cancelNewShape():
     if not GLOBALS.PAUSED:
         if TSD.MOUSE_ACTION == INPUT_STATES.DRAGGING:
             TSD.MOUSE_ACTION = INPUT_STATES.IDLE
-            shapes_group.remove(TSD.CURRENT_SHAPE)
+            canvas_group.remove(TSD.CURRENT_SHAPE)
+    TSD.CURRENT_SHAPE = None
+    print("Drag Canceled")
 
 
 def applyRatioAndDrawShape():
@@ -1216,13 +1252,13 @@ class PauseScreen:
 
         self.background = Surface(self.surf.get_size())
         self.background.fill(Color(64, 64, 64))
-        num_buttons = 3
+        num_buttons = 4
         self.button_size = (300, 100)
         self.button_positions = ((self.screen_rect.centerx, y + offset * 10) for
                                  offset, y in
                                  enumerate(range(75, self.button_size[1] * num_buttons, self.button_size[1])))
         self.buttons = {}
-        for pos, (key, text) in zip(self.button_positions, {'res': 'Resume', 'clear': 'Clear', 'exit': 'Exit'}.items()):
+        for pos, (key, text) in zip(self.button_positions, {'res': 'Resume', 'clear': 'Clear', 'exit': 'Exit', 'save': 'Save to file'}.items()):
             self.buttons[key] = (
                 ClickTextButton((pos, self.button_size), text, 32, Color('BLACK'), Color(170, 170, 170),
                                 Color(120, 120, 120)))
@@ -1249,10 +1285,16 @@ class PauseScreen:
         if self.buttons['res'].mouse_hovers():
             GLOBALS.PAUSED = False
         if self.buttons['clear'].mouse_hovers():
-            shapes_group.empty()
+            clear_canvas()
             GLOBALS.PAUSED = False
+            redraw_canvas()
         if self.buttons['exit'].mouse_hovers():
             run = False
+        if self.buttons['save'].mouse_hovers():
+            surface = pg.Surface((WINDOW.w, WINDOW.h))
+            canvas_group.draw(surface)
+            save_surface_with_filedialog(surface=surface)
+
 
 
 class GLOBALS:
@@ -1284,7 +1326,7 @@ grid = Grid(GLOBALS.GRID_SIZE, GLOBALS.GRID_SIZE)
 
 pause_screen = PauseScreen()
 
-shapes_group = pg.sprite.Group()
+canvas_group = pg.sprite.Group()
 ui_group = [hotbar, colorpicker]
 
 run = True
@@ -1297,17 +1339,21 @@ while run:
     for e in pg.event.get():
         if e.type == pg.QUIT:
             run = False
+        if any_of(e.type, pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP, pg.KEYDOWN, pg.KEYUP):
+            redraw_canvas()
         #######################################################
         #   KEYBOARD   #
         #######################################################
         if e.type == pg.KEYDOWN:
+            if not GLOBALS.PAUSED:
+                hotbar.changeAction(e)
             if e.key == pg.K_ESCAPE:
                 pause_screen.switch()
                 cancelNewShape()
-            if not GLOBALS.PAUSED:
-                hotbar.changeAction(e)
+
             if e.key == pg.K_r:
-                shapes_group.empty()
+                clear_canvas()
+
             if e.key == pg.K_LSHIFT:
                 INPUT_STATES.SHIFT = True
         if e.type == pg.KEYUP:
@@ -1326,12 +1372,12 @@ while run:
                     colorpicker.startDraggingSelectors()
 
                     hotbar.changeAction(e)
-
                 if GLOBALS.PAUSED:
                     pause_screen.check_input_for_buttons()
             if e.button == 3:
                 if not GLOBALS.PAUSED:
                     cancelNewShape()
+
         #######################################################
         if e.type == pg.MOUSEBUTTONUP:
             if e.button == 1:
@@ -1339,6 +1385,7 @@ while run:
                     endShape(colorpicker.get())
                     TSD.CURRENT_SHAPE
                     colorpicker.stopDraggingSelectors()
+
         #######################################################
         # SCROLL WHEEL #
         #######################################################
@@ -1351,17 +1398,20 @@ while run:
     #        RENDER GAME HERE        #
     ####################################################################################################################
 
-    for shape in shapes_group:
-        shape.draw(SCREEN)
-    for shape in shapes_group:
+
+    SCREEN.blit(canvas, (0, 0))
+    # canvas_group.draw(SCREEN)
+    if TSD.CURRENT_SHAPE:
+       TSD.CURRENT_SHAPE.draw(SCREEN)
+    for shape in canvas_group:
         if masks_collide(GLOBALS.cursor, shape):
             GLOBALS.cursor.color = (GREEN)
         else:
             GLOBALS.cursor.color = (GREEN)
 
-    colorpicker.draw(SCREEN)
 
     if not GLOBALS.PAUSED:
+        colorpicker.draw(SCREEN)
         grid.draw(SCREEN)
 
         applyRatioAndDrawShape()
