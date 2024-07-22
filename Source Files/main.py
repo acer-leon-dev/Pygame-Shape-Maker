@@ -6,23 +6,20 @@ from dataclasses import dataclass
 import colorsys
 from tkinter import filedialog
 
-
 pg.init()
 
 
 class WINDOW:
     x = None
     y = None
-    width = 1280
-    height = 720
-    w = width
-    h = height
+    # width, height = 1280, 720
+    width, height = 1920, 1080
+    size = (width, height)
     fps = 360
 
 
-WINDOW.w = 1280
-WINDOW.h = 720
-SCREEN = pg.display.set_mode((WINDOW.w, WINDOW.h), flags=pg.DOUBLEBUF)
+pg.display.set_icon(pg.image.load("misc/icon.ico"))
+SCREEN = pg.display.set_mode(WINDOW.size, flags=pg.DOUBLEBUF)
 SCREEN.set_alpha(None)
 CLOCK = pg.time.Clock()
 mouse = pg.mouse
@@ -59,6 +56,7 @@ for type_id in actions.values():
         shapes.append(type_id)
 list_types = shapes + tools
 
+
 def save_surface_with_filedialog(surface):
     filepath = filedialog.asksaveasfilename(
         title="Save Canvas",
@@ -67,6 +65,7 @@ def save_surface_with_filedialog(surface):
         defaultextension=".png"
     )
     pg.image.save(surface, filepath)
+
 
 def roundNumToNearest(value, round_to):
     value = round(value)
@@ -80,17 +79,19 @@ def roundNumToNearest(value, round_to):
         return value
 
 
-def roundNumsToNearest(values, round_to):
+def round_numbers_to_nearest(values, round_to):
+    res = []
     for value in values:
         value = round(value)
         try:
             n = value % round_to
             if n >= round_to / 2:
-                yield value + (round_to - n)
+                res.append(value + (round_to - n))
             else:
-                yield value - n
+                res.append(value - n)
         except ZeroDivisionError:
-            yield value
+            res.append(value)
+    return Vec2(res)
 
 
 def hsv_to_rgb(H, S, V):
@@ -100,6 +101,7 @@ def hsv_to_rgb(H, S, V):
 def masks_collide(object1, object2, offset=(0, 0)):
     return bool(object1.mask.overlap(object2.mask, (
         object2.rect.x - object1.rect.x - offset[0], object2.rect.y - object1.rect.y - offset[1])))
+
 
 def any_of(lefthand, *righthands) -> bool:
     """
@@ -113,6 +115,7 @@ def any_of(lefthand, *righthands) -> bool:
       bool: Whether or not the lefthand matches any of the righthands
     """
     return any(lefthand == s for s in righthands)
+
 
 ########################################################################################################################
 ###############  CONSTANTS   #################################################################################
@@ -550,27 +553,31 @@ class POLYGONS:
         return vertices
 
 
-@dataclass
-class INPUT_STATES:
-    IDLE = 'NOT_DRAGGING'
-    DRAGGING = 'DRAGGING'
-    SHIFT = False
+mouse_idle = 'idle'
+mouse_dragging = 'dragging'
+holding_shift_key = False
 
 
 ########################################################################################################################
 ###############  GLOBALS   #################################################################################
 ########################################################################################################################
-class TSD:  # Temporary Shape Data
-    CURRENT_SHAPE = None
-    COLOR = Color((100, 100, 100))
-    DRAG_COLOR = Color
-    START = (0, 0)
-    END = (0, 0)
-    WIDTH = 0
-    HEIGHT = 0
-    SIZE = (0, 0)
+class current:  # Temporary Shape Data
+    object = None
+    start_xy = (0, 0)
+    end_xy = (0, 0)
+    width = 0
+    height = 0
+    size = (0, 0)
     action = actions['triangle']
-    MOUSE_ACTION = INPUT_STATES.IDLE
+    mouse_state = mouse_idle
+
+
+def creating_shape():
+    return any(current.action == action for action in shapes)
+
+
+def deleting():
+    return current.action == actions['delete']
 
 
 class FpsCounter:
@@ -583,20 +590,20 @@ class FpsCounter:
     def draw(self, display):
         self.text = str(int(CLOCK.get_fps()))
         self.surf = self.font.render(self.text, True, self.color)
-        display.blit(self.surf, self.surf.get_rect(bottomright=(WINDOW.w, WINDOW.h)))
+        display.blit(self.surf, self.surf.get_rect(bottomright=WINDOW.size))
 
 
 class Grid():
     def __init__(self, step_x, step_y, color=Color(64, 64, 64), width=1):
-        self.surf = Surface((WINDOW.w, WINDOW.h))
+        self.surf = Surface(WINDOW.size)
         self.surf.set_colorkey(COLORKEY)
         self.surf.fill(self.surf.get_colorkey())
         if step_x > 0:
-            for x in range(0, WINDOW.w + 1, step_x):
-                pg.draw.line(self.surf, color, (x, 0), (x, WINDOW.h), width=width)
+            for x in range(0, WINDOW.width + 1, step_x):
+                pg.draw.line(self.surf, color, (x, 0), (x, WINDOW.height), width=width)
         if step_y > 0:
-            for y in range(0, WINDOW.h + 1, step_y):
-                pg.draw.line(self.surf, color, (0, y), (WINDOW.w, y), width=width)
+            for y in range(0, WINDOW.height + 1, step_y):
+                pg.draw.line(self.surf, color, (0, y), (WINDOW.width, y), width=width)
 
     def draw(self, display, special_flags=0):
         display.blit(self.surf, (0, 0), special_flags=special_flags)
@@ -623,16 +630,16 @@ class Shape(pg.sprite.Sprite):
         return self
 
     def mouse_hovers(self):
-        return masks_collide(self, GLOBALS.cursor)
+        return masks_collide(self, cursor)
 
     def change_color(self, color):
         self.color = color
         return self
 
-    def resize_data(self, flip_x, flip_y):
+    def resize_data(self, flip_x=False, flip_y=False):
         self.image = pg.transform.scale(self.image, self.rect.size)
         self.image.fill(self.image.get_colorkey())
-        pg.gfxdraw.filled_polygon(self.image, POLYGONS(TSD.action, self.rect.size).shape, self.color)
+        pg.gfxdraw.filled_polygon(self.image, POLYGONS(current.action, self.rect.size).shape, self.color)
 
         if flip_x and flip_y:
             self.rect = self.image.get_rect(bottomright=self.rect.topleft)
@@ -661,7 +668,7 @@ class DeleteBox(pg.sprite.Sprite):
         self.grid = Grid(20, 20, Color(255, 255, 255))
         self.resize_data(False, False)
 
-    def resize_data(self, flip_x, flip_y):
+    def resize_data(self, flip_x=False, flip_y=False):
         self.image = pg.transform.scale(self.image, self.rect.size)
         self.image.fill(self.color)
         if flip_x and flip_y:
@@ -682,88 +689,85 @@ class DeleteBox(pg.sprite.Sprite):
         display.blit(self.image, self.rect, special_flags=pg.BLEND_ADD)
 
 
-canvas = pg.Surface((WINDOW.w, WINDOW.h))
-
-def redraw_canvas():
-    canvas.fill("BLACK")
-    canvas_group.draw(canvas)
-
-def clear_canvas():
-    canvas_group.empty()
-    canvas.fill("BLACK")
-
-
-def startShape():
-    if any(TSD.action == action for action in shapes):
-        TSD.MOUSE_ACTION = INPUT_STATES.DRAGGING
-        TSD.START = arr(tuple(roundNumsToNearest(GLOBALS.cursor.rect.topleft, GLOBALS.GRID_SIZE)))
-        TSD.CURRENT_SHAPE = Shape(TSD.START, TSD.SIZE, TSD.action).change_color(DRAG_COLOR)
-    if TSD.action == actions['delete']:
-        TSD.MOUSE_ACTION = INPUT_STATES.DRAGGING
-        TSD.START = arr(tuple(GLOBALS.cursor.rect.topleft))
-        TSD.CURRENT_SHAPE = DeleteBox(TSD.START, TSD.SIZE)
+def start_drag():
+    C = current
+    if creating_shape():
+        C.mouse_state = mouse_dragging
+        C.start_xy = round_numbers_to_nearest(cursor.rect.topleft, grid_size)
+        C.object = Shape(C.start_xy, [0, 0], C.action).change_color(DRAG_COLOR)
+    if deleting():
+        C.mouse_state = mouse_dragging
+        C.start_xy = Vec2(cursor.rect.topleft)
+        C.object = DeleteBox(C.start_xy, [0, 0])
 
 
-def drawShape(step_size=0):
-    TSD.CURRENT_SHAPE.rect.topleft = TSD.START
-    TSD.END = arr(tuple(roundNumsToNearest(GLOBALS.cursor.rect.topleft, step_size)))
-    TSD.WIDTH = (TSD.END[0] - TSD.START[0])
-    TSD.HEIGHT = (TSD.END[1] - TSD.START[1])
-    if INPUT_STATES.SHIFT:
-        if TSD.WIDTH > TSD.HEIGHT:
-            TSD.SIZE = arr((TSD.HEIGHT, TSD.HEIGHT))
+def draw_current():
+    C = current
+
+    def apply_ratio():
+        if creating_shape():
+            return grid_size
+        return 0
+
+    # update start and end points of drag
+    C.object.rect.topleft = C.start_xy
+    C.end_xy = round_numbers_to_nearest(cursor.rect.topleft, apply_ratio())
+    # update width and height
+    C.width = C.end_xy.x - C.start_xy.x
+    C.height = C.end_xy.y - C.start_xy.y
+    if holding_shift_key:
+        # (if holding shift) make sides of shape equal
+        if C.width > C.height:
+            C.object.rect.size = arr([C.height, C.height])
         else:
-            TSD.SIZE = arr((TSD.WIDTH, TSD.WIDTH))
-        np.abs(TSD.SIZE, TSD.SIZE)
-        TSD.SIZE[0] *= POLYGONS(TSD.action).ratio
+            C.object.rect.size = arr([C.width, C.width])
+        C.object.rect.size = np.abs(C.object.rect.size)
+        C.object.rect.size[0] *= POLYGONS(C.action).ratio
     else:
-        TSD.SIZE = np.absolute(arr([TSD.WIDTH, TSD.HEIGHT]))
-    TSD.CURRENT_SHAPE.rect.size = TSD.SIZE
-    if TSD.WIDTH < 0 and TSD.HEIGHT < 0:
-        TSD.CURRENT_SHAPE.resize_data(True, True)
-    elif TSD.WIDTH < 0:
-        TSD.CURRENT_SHAPE.resize_data(True, False)
-    elif TSD.HEIGHT < 0:
-        TSD.CURRENT_SHAPE.resize_data(False, True)
+        C.object.rect.size = np.abs([C.width, C.height])
+    if C.width < 0 and C.height < 0:
+        C.object.resize_data(True, True)
+    elif C.width < 0:
+        C.object.resize_data(True, False)
+    elif C.height < 0:
+        C.object.resize_data(False, True)
     else:
-        TSD.CURRENT_SHAPE.resize_data(False, False)
+        C.object.resize_data()
 
 
-def endShape(color):
-    if TSD.MOUSE_ACTION == INPUT_STATES.DRAGGING:
-        if any(TSD.action == action for action in shapes):
-            TSD.CURRENT_SHAPE.color = color
-            canvas_group.add(TSD.CURRENT_SHAPE)
-            drawShape(GLOBALS.GRID_SIZE)
-        if TSD.action == actions['delete']:
+def end_drag(color):
+    C = current
+    if C.mouse_state == mouse_dragging:
+        if creating_shape():
+            C.object.color = color
+            canvas_group.add(C.object)
+            draw_current()
+        if deleting():
             for shape in canvas_group:
-                print("eyfiwf0")
-                if masks_collide(shape, TSD.CURRENT_SHAPE) or masks_collide(shape, GLOBALS.cursor):
+                if masks_collide(shape, C.object) or masks_collide(shape, cursor):
                     canvas_group.remove(shape)
-                    print("shape removed from canvas group")
-        TSD.MOUSE_ACTION = INPUT_STATES.IDLE
-        TSD.START = TSD.END = TSD.SIZE = (0, 0)
-        TSD.WIDTH = TSD.HEIGHT = 0
-    TSD.CURRENT_SHAPE = None
-    print("Drag Ended")
+        C.mouse_state = mouse_idle
+        C.start_xy = C.end_xy = C.object.rect.size = (0, 0)
+        C.width = C.height = 0
+    C.object = None
     redraw_canvas()
 
 
-def cancelNewShape():
-    if not GLOBALS.PAUSED:
-        if TSD.MOUSE_ACTION == INPUT_STATES.DRAGGING:
-            TSD.MOUSE_ACTION = INPUT_STATES.IDLE
-            canvas_group.remove(TSD.CURRENT_SHAPE)
-    TSD.CURRENT_SHAPE = None
-    print("Drag Canceled")
+def cancel_drag():
+    C = current
+    if not paused:
+        if C.mouse_state == mouse_dragging:
+            C.mouse_state = mouse_idle
+            canvas_group.remove(C.object)
+    C.object = None
 
 
-def applyRatioAndDrawShape():
-    if TSD.MOUSE_ACTION == INPUT_STATES.DRAGGING:
-        if any(TSD.action == action for action in shapes):
-            drawShape(GLOBALS.GRID_SIZE)
-        elif TSD.action == actions['delete']:
-            drawShape()
+def apply_ratio():
+    C = current
+    if creating_shape():
+        draw_current()
+    elif deleting():
+        draw_current()
 
 
 class ShapeButton():
@@ -782,7 +786,7 @@ class ShapeButton():
         self.shape_image = pg.transform.scale_by(self.surf, self.shape_scale)
         self.shape_image.set_colorkey((COLORKEY));
         self.shape_image.fill(self.shape_image.get_colorkey())
-        self.shape_rect = self.shape_image.get_rect(center=arr(self.rect.size) / 2)
+        self.shape_rect = self.shape_image.get_rect(center=Vec2(self.rect.size) / 2)
         self.shape_info = POLYGONS(self.action, Vec2(self.rect.size) * self.shape_scale)
         self.create_shape()
 
@@ -802,7 +806,7 @@ class ShapeButton():
         return self
 
     def mouse_hovers(self, offset=(0, 0)):
-        return masks_collide(self, GLOBALS.cursor, offset)
+        return masks_collide(self, cursor, offset)
 
     def draw(self, display, special_flags=0):
         self.surf.blit(self.shape_image, self.shape_rect)
@@ -829,7 +833,7 @@ class TextButton():
         self.mask = pg.mask.from_surface(self.surf)
 
     def mouse_hovers(self, offset=(0, 0)):
-        return masks_collide(self, GLOBALS.cursor, offset)
+        return masks_collide(self, cursor, offset)
 
     def draw(self, display):
         self.surf.blit(self.text_surf, self.text_rect)
@@ -881,36 +885,40 @@ class Hotbar:
         try:
             match event.type:
                 case pg.KEYDOWN | pg.KEYUP:
+                    if current.mouse_state == mouse_dragging:
+                        cancel_drag()
                     match event.key:
                         case pg.K_1:
-                            TSD.action = self.buttons[0].action
+                            current.action = self.buttons[0].action
                         case pg.K_2:
-                            TSD.action = self.buttons[1].action
+                            current.action = self.buttons[1].action
                         case pg.K_3:
-                            TSD.action = self.buttons[2].action
+                            current.action = self.buttons[2].action
                         case pg.K_4:
-                            TSD.action = self.buttons[3].action
+                            current.action = self.buttons[3].action
                         case pg.K_5:
-                            TSD.action = self.buttons[4].action
+                            current.action = self.buttons[4].action
                         case pg.K_6:
-                            TSD.action = self.buttons[5].action
+                            current.action = self.buttons[5].action
                         case pg.K_7:
-                            TSD.action = self.buttons[6].action
+                            current.action = self.buttons[6].action
                 case pg.MOUSEBUTTONDOWN | pg.MOUSEBUTTONUP:
-                    if not masks_collide(GLOBALS.cursor, self):
+                    if not masks_collide(cursor, self):
                         return
                     for button in self.buttons:
-                        if not masks_collide(button, GLOBALS.cursor, (10, 10)):
+                        if not masks_collide(button, cursor, (10, 10)):
                             continue
-                        TSD.action = button.action
+                        current.action = button.action
                         break
                 case pg.MOUSEWHEEL:
+                    if current.mouse_state == mouse_dragging:
+                        cancel_drag()
                     increment = 1 if e.precise_y < 0 else -1
-                    index = list_types.index(TSD.action) + increment
+                    index = list_types.index(current.action) + increment
                     try:
-                        TSD.action = list_types[index]
+                        current.action = list_types[index]
                     except IndexError:
-                        TSD.action = list_types[0]
+                        current.action = list_types[0]
         except AttributeError:
             pass
         self.update()
@@ -919,7 +927,7 @@ class Hotbar:
 
     def update(self):
         for button in self.buttons:
-            if not TSD.action == button.action:
+            if not current.action == button.action:
                 bg_color = button.bg_color
             else:
                 bg_color = button.bg_color + Color(30, 30, 60)
@@ -993,11 +1001,11 @@ class Slider():
 
     def startDragging(self):
         self.cursor_dragging = True
-        GLOBALS.cursor.hide()
+        cursor.hide()
 
     def stopDragging(self):
         self.cursor_dragging = False
-        GLOBALS.cursor.show()
+        cursor.show()
 
     def get(self):
         return self.value
@@ -1027,30 +1035,30 @@ class Slider():
     def drag(self, mask_offset):
         if self.cursor_dragging:
             half_pick_width = self.pick_rect.w / 2
-            if GLOBALS.cursor.rect.x - mask_offset[0] < + self.rect.x + half_pick_width:
+            if cursor.rect.x - mask_offset[0] < + self.rect.x + half_pick_width:
                 self.fraction = 0
                 self.pick_rect.centerx = half_pick_width
-            elif GLOBALS.cursor.rect.x - mask_offset[0] > + self.rect.x + self.bar_rect.width + half_pick_width:
+            elif cursor.rect.x - mask_offset[0] > + self.rect.x + self.bar_rect.width + half_pick_width:
                 self.fraction = 1
                 self.pick_rect.centerx = self.rect.width - half_pick_width
             else:
-                self.fraction = ((GLOBALS.cursor.rect.x - mask_offset[0]) - self.rect.x - half_pick_width) / (
+                self.fraction = ((cursor.rect.x - mask_offset[0]) - self.rect.x - half_pick_width) / (
                     self.bar_rect.width)
-                self.pick_rect.centerx = GLOBALS.cursor.get_pos_in_rect(self.rect)[0] - mask_offset[0]
+                self.pick_rect.centerx = cursor.get_pos_in_rect(self.rect)[0] - mask_offset[0]
             self.value = self.fraction * (self.max - self.min) + self.min
 
             self.PD.current['bg'] = self.PD.active['bg']
             self.PD.current['bd'] = self.PD.active['bd']
 
     def mouse_hovers(self, offset=(0, 0)):
-        return masks_collide(self, GLOBALS.cursor, offset)
+        return masks_collide(self, cursor, offset)
 
     def update(self, mask_offset=(0, 0)):
         if self.cursor_dragging:
-            if GLOBALS.cursor.visible and self.mouse_hovers(mask_offset):
-                GLOBALS.cursor.hide()
-            elif not GLOBALS.cursor.visible and not self.mouse_hovers(mask_offset):
-                GLOBALS.cursor.show()
+            if cursor.visible and self.mouse_hovers(mask_offset):
+                cursor.hide()
+            elif not cursor.visible and not self.mouse_hovers(mask_offset):
+                cursor.show()
 
         self.drag(mask_offset)
 
@@ -1133,7 +1141,7 @@ class colorpicker:
         self.mask = pg.mask.from_surface(self.surf)
 
     def mouse_hovers(self):
-        return masks_collide(self, GLOBALS.cursor)
+        return masks_collide(self, cursor)
 
     def startDraggingSelectors(self):
         for slider in self.sliders:
@@ -1229,7 +1237,7 @@ class ClickTextButton():
         self.text_rect = self.text_surf.get_rect(center=Vec2(self.rect.size) / 2)
 
     def mouse_hovers(self, offset=(0, 0)):
-        return masks_collide(self, GLOBALS.cursor, offset)
+        return masks_collide(self, cursor, offset)
 
     def update(self):
         if self.mouse_hovers():
@@ -1246,7 +1254,7 @@ class ClickTextButton():
 
 class PauseScreen:
     def __init__(self):
-        self.surf = Surface((WINDOW.w, WINDOW.h))
+        self.surf = Surface(WINDOW.size)
         self.screen_rect = self.surf.get_rect()
         self.surf.set_alpha(128)
 
@@ -1258,7 +1266,8 @@ class PauseScreen:
                                  offset, y in
                                  enumerate(range(75, self.button_size[1] * num_buttons, self.button_size[1])))
         self.buttons = {}
-        for pos, (key, text) in zip(self.button_positions, {'res': 'Resume', 'clear': 'Clear', 'exit': 'Exit', 'save': 'Save to file'}.items()):
+        for pos, (key, text) in zip(self.button_positions, {'res': 'Resume', 'clear': 'Clear', 'exit': 'Exit',
+                                                            'save': 'Save to file'}.items()):
             self.buttons[key] = (
                 ClickTextButton((pos, self.button_size), text, 32, Color('BLACK'), Color(170, 170, 170),
                                 Color(120, 120, 120)))
@@ -1274,34 +1283,25 @@ class PauseScreen:
             button.update()
             button.draw(display)
 
-    def switch(self):
-        if not GLOBALS.PAUSED:
-            GLOBALS.PAUSED = True
-        else:
-            GLOBALS.PAUSED = False
-
     def check_input_for_buttons(self):
+        global paused
         global run
         if self.buttons['res'].mouse_hovers():
-            GLOBALS.PAUSED = False
+            paused = False
         if self.buttons['clear'].mouse_hovers():
             clear_canvas()
-            GLOBALS.PAUSED = False
+            paused = False
             redraw_canvas()
         if self.buttons['exit'].mouse_hovers():
             run = False
         if self.buttons['save'].mouse_hovers():
-            surface = pg.Surface((WINDOW.w, WINDOW.h))
+            surface = pg.Surface(WINDOW.size)
             canvas_group.draw(surface)
             save_surface_with_filedialog(surface=surface)
 
-
-
-class GLOBALS:
-    GRID_SIZE = 0
-    PAUSED = False
-    cursor = Cursor()
-
+grid_size = 5
+paused = False
+cursor = Cursor()
 
 hotbar = Hotbar(x=10, y=10,
                 button_size=(50, 50),
@@ -1311,7 +1311,7 @@ hotbar = Hotbar(x=10, y=10,
                 border_thickness=3,
                 icon_scale=0.75)
 
-colorpicker = colorpicker(x=WINDOW.w - 200 - 25,
+colorpicker = colorpicker(x=WINDOW.width - 200 - 25,
                           y=15,
                           width=200,
                           slider_height=30,
@@ -1322,11 +1322,23 @@ colorpicker = colorpicker(x=WINDOW.w - 200 - 25,
 fps_counter = FpsCounter(text_height=22,
                          color=WHITE)
 
-grid = Grid(GLOBALS.GRID_SIZE, GLOBALS.GRID_SIZE)
+canvas = pg.Surface(WINDOW.size)
+canvas_group = pg.sprite.Group()
+
+def redraw_canvas():
+    canvas.fill("BLACK")
+    grid.draw(SCREEN)
+    canvas_group.draw(canvas)
+
+def clear_canvas():
+    canvas_group.empty()
+    redraw_canvas()
+
+grid_active = False
+grid = Grid(grid_size, grid_size)
 
 pause_screen = PauseScreen()
 
-canvas_group = pg.sprite.Group()
 ui_group = [hotbar, colorpicker]
 
 run = True
@@ -1345,89 +1357,87 @@ while run:
         #   KEYBOARD   #
         #######################################################
         if e.type == pg.KEYDOWN:
-            if not GLOBALS.PAUSED:
+            if not paused:
                 hotbar.changeAction(e)
             if e.key == pg.K_ESCAPE:
-                pause_screen.switch()
-                cancelNewShape()
+                paused = not paused
+                cancel_drag()
 
             if e.key == pg.K_r:
                 clear_canvas()
 
             if e.key == pg.K_LSHIFT:
-                INPUT_STATES.SHIFT = True
+                holding_shift_key = True
+            if e.key == pg.K_TAB:
+                grid_active = not grid_active
         if e.type == pg.KEYUP:
             if e.key == pg.K_LSHIFT:
-                INPUT_STATES.SHIFT = False
+                holding_shift_key = False
         #######################################################
         # MOUSE BUTTON #
         #######################################################
         if e.type == pg.MOUSEBUTTONDOWN:
             if e.button == 1:
-                if not GLOBALS.PAUSED:
-                    if not any(masks_collide(GLOBALS.cursor, object) for object in
+                if not paused:
+                    if not any(masks_collide(cursor, object) for object in
                                ui_group):
-                        startShape()
+                        start_drag()
 
                     colorpicker.startDraggingSelectors()
 
                     hotbar.changeAction(e)
-                if GLOBALS.PAUSED:
+                if paused:
                     pause_screen.check_input_for_buttons()
             if e.button == 3:
-                if not GLOBALS.PAUSED:
-                    cancelNewShape()
-
+                if not paused:
+                    cancel_drag()
         #######################################################
         if e.type == pg.MOUSEBUTTONUP:
             if e.button == 1:
-                if not GLOBALS.PAUSED:
-                    endShape(colorpicker.get())
-                    TSD.CURRENT_SHAPE
+                if not paused:
+                    end_drag(colorpicker.get())
+                    current.object
                     colorpicker.stopDraggingSelectors()
 
         #######################################################
         # SCROLL WHEEL #
         #######################################################
         if e.type == pg.MOUSEWHEEL:
-            if not INPUT_STATES.SHIFT:
+            if not holding_shift_key:
                 hotbar.changeAction(e)
-            if INPUT_STATES.SHIFT:
+            if holding_shift_key:
                 colorpicker.scroll(hue_incr=18)
     ####################################################################################################################
-    #        RENDER GAME HERE        #
+    #        Rend_xyER GAME HERE        #
     ####################################################################################################################
-
 
     SCREEN.blit(canvas, (0, 0))
     # canvas_group.draw(SCREEN)
-    if TSD.CURRENT_SHAPE:
-       TSD.CURRENT_SHAPE.draw(SCREEN)
+    if current.object:
+        current.object.draw(SCREEN)
     for shape in canvas_group:
-        if masks_collide(GLOBALS.cursor, shape):
-            GLOBALS.cursor.color = (GREEN)
+        if masks_collide(cursor, shape):
+            cursor.color = (GREEN)
         else:
-            GLOBALS.cursor.color = (GREEN)
+            cursor.color = (GREEN)
 
-
-    if not GLOBALS.PAUSED:
+    if not paused:
         colorpicker.draw(SCREEN)
-        grid.draw(SCREEN)
-
-        applyRatioAndDrawShape()
+        if current.mouse_state == mouse_dragging:
+            draw_current()
 
         hotbar.changeColors(colorpicker.get())
         for object in ui_group:
             object.draw(SCREEN)
         colorpicker.update()
-    elif GLOBALS.PAUSED:
+    elif paused:
         pause_screen.draw(SCREEN)
 
-    GLOBALS.cursor.draw(SCREEN)
+    cursor.draw(SCREEN)
     fps_counter.draw(SCREEN)
 
     ####################################################################################################################
-    #        RENDER GAME HERE        #
+    #        Rend_xyER GAME HERE        #
     ####################################################################################################################
     pg.display.update()
     DT = CLOCK.tick(WINDOW.fps)
