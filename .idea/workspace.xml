@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Update README.md">
+    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Add image saving feature, Add grand optimizations">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source Files/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source Files/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -366,7 +365,15 @@
       <option name="project" value="LOCAL" />
       <updated>1721483358496</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="Add image saving feature, Add grand optimizations">
+      <option name="closed" value="true" />
+      <created>1721648598158</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1721648598158</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -420,7 +427,8 @@
     <MESSAGE value="Updated files" />
     <MESSAGE value="Fixed Bugs" />
     <MESSAGE value="Update README.md" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update README.md" />
+    <MESSAGE value="Add image saving feature, Add grand optimizations" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add image saving feature, Add grand optimizations" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
