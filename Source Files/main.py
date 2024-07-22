@@ -13,7 +13,7 @@ class WINDOW:
     x = None
     y = None
     # width, height = 1280, 720
-    width, height = 1920, 1080
+    width, height = 1600, 900
     size = (width, height)
     fps = 360
 
