@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Updated main.py">
-      <change beforePath="$PROJECT_DIR$/Source Files/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source Files/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Updated main.py" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -60,7 +58,7 @@
     "Python.quic.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "C:/Users/adote/PycharmProjects/Pygame Console Game/fonts.py",
+    "last_opened_file_path": "C:/Users/adote/PycharmProjects/Pygame Shape Maker/misc",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
@@ -74,8 +72,8 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\adote\PycharmProjects\Pygame Shape Maker" />
       <recent name="C:\Users\adote\PycharmProjects\Pygame Shape Maker\misc" />
+      <recent name="C:\Users\adote\PycharmProjects\Pygame Shape Maker" />
       <recent name="C:\Users\adote\PycharmProjects\Pygame Shape Maker\Source Files\images\slider_backgrounds" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -405,7 +403,23 @@
       <option name="project" value="LOCAL" />
       <updated>1721658268939</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1721658644678</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1721658644678</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1721658727754</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1721658727754</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
