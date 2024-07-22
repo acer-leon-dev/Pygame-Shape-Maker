@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Add image saving feature, Add grand optimizations">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="f3dea4f8-de41-46a2-bf7a-d0790415d064" name="Changes" comment="Updated main.py">
       <change beforePath="$PROJECT_DIR$/Source Files/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Source Files/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -398,7 +397,15 @@
       <option name="project" value="LOCAL" />
       <updated>1721649375253</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="Updated main.py">
+      <option name="closed" value="true" />
+      <created>1721658268939</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1721658268939</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -448,11 +455,11 @@
     <MESSAGE value="add stuff" />
     <MESSAGE value="Update main.py&#10;Add rainbow_strip.png" />
     <MESSAGE value="Edited main.py" />
-    <MESSAGE value="Updated main.py" />
     <MESSAGE value="Updated files" />
     <MESSAGE value="Fixed Bugs" />
     <MESSAGE value="Update README.md" />
     <MESSAGE value="Add image saving feature, Add grand optimizations" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add image saving feature, Add grand optimizations" />
+    <MESSAGE value="Updated main.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated main.py" />
   </component>
 </project>

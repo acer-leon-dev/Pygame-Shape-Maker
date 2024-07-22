@@ -1299,7 +1299,7 @@ class PauseScreen:
             canvas_group.draw(surface)
             save_surface_with_filedialog(surface=surface)
 
-grid_size = 5
+grid_size = 0
 paused = False
 cursor = Cursor()
 
